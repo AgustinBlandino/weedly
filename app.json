@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "Weedly",
+    "slug": "weedly",
+    "scheme": "weedly",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#121412",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.agus.weedly"
+    },
+    "android": {
+      "package": "com.agus.weedly"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Weedly usa tus fotos para guardar el seguimiento de cada planta.",
+          "cameraPermission": "Weedly usa la cámara para sacar fotos de tus plantas."
+        }
+      ],
+      "expo-status-bar",
+      "expo-font"
+    ]
+  }
+}
