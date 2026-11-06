@@ -3,13 +3,13 @@ import {
   AccessibilityInfo,
   Animated,
   Easing,
-  Image,
   LayoutChangeEvent,
   PanResponder,
   Pressable,
   Text,
   View,
 } from 'react-native';
+import { PlantSprite, SPRITE_ANCHOR_Y, SPRITE_UNITS } from './PlantSprite';
 import { colors, fonts } from './theme';
 
 export interface TentItem {
@@ -34,10 +34,10 @@ const ALPHA = (58 * Math.PI) / 180;
 const COS_A = Math.cos(ALPHA);
 const SIN_A = Math.sin(ALPHA);
 const FLOOR = 190;
-const TENT_H = 120;
+const TENT_H = 165;
 const SWAY = 9; // grados de vaivén automático
 
-export function Tent3D({ items, rows, cols, height = 290, onPressPlant }: Props) {
+export function Tent3D({ items, rows, cols, height = 340, onPressPlant }: Props) {
   const [width, setWidth] = useState(340);
   const [theta, setTheta] = useState(45);
   const thetaRef = useRef(45);
@@ -126,7 +126,11 @@ export function Tent3D({ items, rows, cols, height = 290, onPressPlant }: Props)
 
   const cellW = FLOOR / cols;
   const cellH = FLOOR / rows;
-  const D = Math.min(cellW, cellH) * 0.72;
+  // Escala de la planta según la celda más chica, con tope para carpas de pocas macetas.
+  const pxPerUnit = Math.min(Math.min(cellW, cellH) * 1.8, 190);
+  const spriteSize = pxPerUnit * SPRITE_UNITS;
+  const plantW = pxPerUnit * 0.7;
+  const plantH = pxPerUnit;
 
   const pots = items
     .map((it) => {
@@ -148,23 +152,6 @@ export function Tent3D({ items, rows, cols, height = 290, onPressPlant }: Props)
     { scaleY: COS_A },
     { rotateZ: `${theta}deg` },
   ];
-
-  const ellipse = (sx: number, sy: number, z: number, d: number, bg: string, border?: string) => (
-    <View
-      style={{
-        position: 'absolute',
-        left: sx - d / 2,
-        top: sy - z * SIN_A - d / 2,
-        width: d,
-        height: d,
-        borderRadius: d / 2,
-        backgroundColor: bg,
-        borderWidth: border ? 1 : 0,
-        borderColor: border,
-        transform: [{ scaleY: COS_A }],
-      }}
-    />
-  );
 
   const onLayout = (e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width);
 
@@ -227,39 +214,18 @@ export function Tent3D({ items, rows, cols, height = 290, onPressPlant }: Props)
         }}
       />
 
-      {/* Macetas, de atrás hacia adelante */}
+      {/* Plantas, de atrás hacia adelante */}
       {pots.map(({ it, sx, sy }, i) => {
-        const ring = it.alert ? colors.flora : colors.leafLight;
-        const labelTop = sy - 64 * SIN_A - 11;
+        const labelTop = sy - plantH - 8;
         return (
           <React.Fragment key={it.id}>
-            {ellipse(sx, sy, 0, D, '#1A1714')}
-            {[5, 10, 15, 20].map((z) => (
-              <React.Fragment key={z}>{ellipse(sx, sy, z, D, colors.pot, colors.potEdge)}</React.Fragment>
-            ))}
-            {ellipse(sx, sy, 25, D, colors.potRim)}
-            {it.coverUri ? (
-              <Image
-                source={{ uri: it.coverUri }}
-                style={{
-                  position: 'absolute',
-                  left: sx - (D + 10) / 2,
-                  top: sy - 40 * SIN_A - (D + 10) / 2,
-                  width: D + 10,
-                  height: D + 10,
-                  borderRadius: (D + 10) / 2,
-                  borderWidth: 2,
-                  borderColor: ring,
-                  transform: [{ scaleY: COS_A }],
-                }}
-              />
-            ) : (
-              <>
-                {ellipse(sx, sy, 34, D + 10, colors.leafDark, ring)}
-                {ellipse(sx, sy, 44, D * 0.65, colors.leaf)}
-                {ellipse(sx, sy, 52, D * 0.32, colors.leafLight)}
-              </>
-            )}
+            <View
+              pointerEvents="none"
+              style={{ position: 'absolute', left: sx - spriteSize / 2, top: sy - spriteSize * SPRITE_ANCHOR_Y }}
+            >
+              {/* Cada planta arranca en un ángulo propio para que no se vean clonadas. */}
+              <PlantSprite angle={theta + (it.row * 3 + it.col * 5) * 37} size={spriteSize} />
+            </View>
             <Animated.View
               pointerEvents="none"
               style={{
@@ -292,10 +258,10 @@ export function Tent3D({ items, rows, cols, height = 290, onPressPlant }: Props)
               onPress={() => onPressPlant(it.id)}
               style={{
                 position: 'absolute',
-                left: sx - D / 2 - 6,
+                left: sx - plantW / 2,
                 top: labelTop - 4,
-                width: D + 12,
-                height: sy + (D * COS_A) / 2 - labelTop + 6,
+                width: plantW,
+                height: sy - labelTop + 16,
               }}
             />
           </React.Fragment>
