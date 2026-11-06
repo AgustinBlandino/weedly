@@ -45,6 +45,7 @@ export interface Plant {
   germinationDate: string;
   description: string;
   coverPhotoId?: string;
+  endedAt?: string; // YYYY-MM-DD; presente = descartada
 }
 
 export interface PhaseChange {
@@ -65,6 +66,7 @@ export interface Genetic {
   effects: string[];
   flavors: string[];
   notes: string;
+  seedsAvailable?: number;
 }
 
 export interface Fertilizer {

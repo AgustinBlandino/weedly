@@ -25,6 +25,10 @@ Agus, un solo usuario. Cultivo: carpa de 80×80×160 cm, 6 macetas de 10 L en ti
 - Intención de **datos en la nube con sync** (Supabase: base y fotos en Storage) para backup y uso en otro dispositivo. Todavía no está hecho: hoy todo vive en el celular (AsyncStorage).
 - Intención de **varias carpas con historial de ciclos**. El modelo de datos lo contempla pero la app todavía no lo expone (ver tensiones).
 - Decisión original: un solo usuario, por simplicidad. Con el giro a "producto para otros growers", esto se reabre cuando haya cuentas.
+- **Onboarding como ciclo completo** (noviembre 2026): armar carpa, cargar semillas, plantar, cultivar, cerrar ciclo y empezar otro. Tiene dos entradas: "Arranco de cero" y "Ya tengo plantas".
+- **Semillas como cantidad por genética**, no como lotes. Si hace falta banco, fecha o precio por compra, se reabre.
+- **La planta ocupa maceta desde que germina.** No hay semillero aparte: germinar 8 para quedarse con las 6 mejores queda para más adelante.
+- **Las plantas descartadas no se borran**: conservan su historial en el diario y liberan la maceta.
 
 ## Tensiones y huecos conocidos (verificalos en el código antes de usarlos)
 - **El seed es el ciclo de Agus.** Los datos iniciales del store son su carpa, sus macetas y sus fechas. Para otro grower hace falta onboarding (crear carpa, ciclo, macetas y plantas) y un estado vacío decente.

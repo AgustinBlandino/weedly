@@ -1,8 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useRef } from 'react';
+import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
+  Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleProp,
@@ -14,8 +17,9 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, radius } from './theme';
+import { fmtDate, isValidYmd, parseDate, toYmd } from './utils';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -205,6 +209,141 @@ export function Field({ label, style, ...props }: TextInputProps & { label: stri
           textAlignVertical: props.multiline ? 'top' : 'center',
         }}
       />
+    </View>
+  );
+}
+
+function atTime(ymd: string, hours: number, minutes = 0, seconds = 0): Date {
+  const d = parseDate(ymd);
+  d.setHours(hours, minutes, seconds, 0);
+  return d;
+}
+
+/** Selector de fecha. Trabaja con YYYY-MM-DD en hora local; `minDate` y `maxDate` son inclusivos. */
+export function DateField({
+  label,
+  value,
+  onChange,
+  minDate,
+  maxDate,
+  error,
+  style,
+}: {
+  label: string;
+  value: string;
+  onChange: (ymd: string) => void;
+  minDate?: string;
+  maxDate?: string;
+  error?: string;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const insets = useSafeAreaInsets();
+  const [draft, setDraft] = useState<string | null>(null);
+  const valid = isValidYmd(value);
+  // Al mediodía, para que un cambio de horario no mueva el día.
+  const current = atTime(valid ? value : toYmd(new Date()), 12);
+  const minimumDate = minDate ? atTime(minDate, 0) : undefined;
+  const maximumDate = maxDate ? atTime(maxDate, 23, 59, 59) : undefined;
+  const text = valid ? `${fmtDate(value)} ${parseDate(value).getFullYear()}` : 'Elegí una fecha';
+
+  const commit = (ymd: string) => {
+    let next = ymd;
+    if (minDate && next < minDate) next = minDate;
+    if (maxDate && next > maxDate) next = maxDate;
+    if (next !== value) onChange(next);
+  };
+
+  const open = () => {
+    if (Platform.OS === 'android') {
+      DateTimePickerAndroid.open({
+        value: current,
+        mode: 'date',
+        minimumDate,
+        maximumDate,
+        onValueChange: (_event, date) => commit(toYmd(date)),
+      });
+    } else {
+      setDraft(toYmd(current));
+    }
+  };
+
+  return (
+    <View style={[{ gap: 6 }, style]}>
+      <Muted style={{ fontSize: 13 }}>{label}</Muted>
+      <Pressable
+        onPress={open}
+        accessibilityRole="button"
+        accessibilityLabel={`${label}: ${text}`}
+        accessibilityHint="Abre el calendario"
+        style={({ pressed }) => ({
+          minHeight: 48,
+          borderRadius: 14,
+          borderWidth: 1,
+          borderColor: error ? colors.danger : colors.border,
+          backgroundColor: colors.cardAlt,
+          paddingHorizontal: 14,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 10,
+          transform: [{ scale: pressed ? 0.98 : 1 }],
+        })}
+      >
+        <Text style={{ fontFamily: fonts.body, fontSize: 15, color: valid ? colors.text : colors.muted }}>{text}</Text>
+        <Ionicons name="calendar-outline" size={18} color={colors.lime} />
+      </Pressable>
+      {error ? (
+        <Text accessibilityRole="alert" style={{ fontFamily: fonts.body, fontSize: 12, color: colors.danger }}>
+          {error}
+        </Text>
+      ) : null}
+
+      {Platform.OS !== 'android' ? (
+        <Modal visible={draft != null} transparent animationType="slide" onRequestClose={() => setDraft(null)}>
+          <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+            <Pressable
+              onPress={() => setDraft(null)}
+              accessibilityRole="button"
+              accessibilityLabel="Cancelar"
+              style={[StyleSheet.absoluteFill, { backgroundColor: colors.bgDeep, opacity: 0.7 }]}
+            />
+            <View
+              accessibilityViewIsModal
+              style={{
+                backgroundColor: colors.sheet,
+                borderTopLeftRadius: radius.lg,
+                borderTopRightRadius: radius.lg,
+                paddingHorizontal: 20,
+                paddingTop: 18,
+                paddingBottom: Math.max(insets.bottom, 16),
+                gap: 12,
+              }}
+            >
+              <H2>{label}</H2>
+              {draft != null ? (
+                <DateTimePicker
+                  value={atTime(draft, 12)}
+                  mode="date"
+                  display="inline"
+                  themeVariant="dark"
+                  accentColor={colors.lime}
+                  locale="es-AR"
+                  minimumDate={minimumDate}
+                  maximumDate={maximumDate}
+                  onValueChange={(_event, date) => setDraft(toYmd(date))}
+                />
+              ) : null}
+              <PrimaryButton
+                label="Listo"
+                onPress={() => {
+                  if (draft != null) commit(draft);
+                  setDraft(null);
+                }}
+              />
+            </View>
+          </View>
+        </Modal>
+      ) : null}
     </View>
   );
 }

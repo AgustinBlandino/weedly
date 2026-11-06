@@ -37,6 +37,7 @@ export default function GeneticaScreen() {
       effects: splitList(effects),
       flavors: splitList(flavors),
       notes: notes.trim(),
+      seedsAvailable: existing?.seedsAvailable,
     });
     router.back();
   };

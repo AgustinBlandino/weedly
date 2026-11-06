@@ -36,8 +36,9 @@ export default function PlantaScreen() {
   if (!plant) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, padding: 20 }}>
-        <IconButton icon="arrow-back" label="Volver" onPress={() => router.back()} />
-        <Body style={{ marginTop: 20 }}>No encontré esa planta.</Body>
+        <IconButton icon="arrow-back" label="Volver" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
+        <Title size={28} style={{ marginTop: 20 }}>No encontré esa planta</Title>
+        <Body style={{ marginTop: 8, color: colors.textSoft }}>Puede que ya no exista. Volvé a la carpa y elegí otra.</Body>
       </SafeAreaView>
     );
   }

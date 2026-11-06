@@ -1,4 +1,5 @@
 import type { Store } from './store';
+import { PHASE_LABEL } from './types';
 import type { Phase, PhaseChange, Photo, Plant, Watering } from './types';
 import { daysBetween, today, toYmd, parseDate, vpd } from './utils';
 
@@ -74,14 +75,45 @@ export function coverOf(s: Store, plant: Plant): Photo | undefined {
   return s.photos.find((x) => x.plantId === plant.id);
 }
 
+export function activeTent(s: Store) {
+  return s.tents.find((t) => t.id === s.activeTentId);
+}
+
+export function activeCycle(s: Store) {
+  return s.cycles.find((c) => c.tentId === s.activeTentId && c.status === 'activo');
+}
+
 export function activePlants(s: Store) {
-  const cycle = s.cycles.find((c) => c.tentId === s.activeTentId && c.status === 'activo');
+  const cycle = activeCycle(s);
   if (!cycle) return [];
   const pots = s.pots.filter((p) => p.cycleId === cycle.id);
   return pots
-    .map((pot) => ({ pot, plant: s.plants.find((pl) => pl.potId === pot.id) }))
+    .map((pot) => ({ pot, plant: s.plants.find((pl) => pl.potId === pot.id && !pl.endedAt) }))
     .filter((x): x is { pot: typeof x.pot; plant: Plant } => !!x.plant)
     .sort((a, b) => a.pot.row - b.pot.row || a.pot.col - b.pot.col);
+}
+
+export function emptyPots(s: Store) {
+  const cycle = activeCycle(s);
+  if (!cycle) return [];
+  return s.pots
+    .filter((pot) => pot.cycleId === cycle.id && !s.plants.some((pl) => pl.potId === pot.id && !pl.endedAt))
+    .sort((a, b) => a.row - b.row || a.col - b.col);
+}
+
+export function tentHeadline(s: Store): string {
+  const summaries = activePlants(s).map(({ plant }) => summarize(s, plant));
+  const first = summaries[0];
+  if (!first) return 'Sin plantas';
+
+  const counts = new Map<Phase, number>();
+  summaries.forEach(({ phase }) => counts.set(phase, (counts.get(phase) ?? 0) + 1));
+  if (counts.size === 1) return `${PHASE_LABEL[first.phase]} · día ${first.dayInPhase}`;
+
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([phase, count]) => `${count} en ${PHASE_LABEL[phase].toLowerCase()}`)
+    .join(' · ');
 }
 
 export function latestClimate(s: Store) {

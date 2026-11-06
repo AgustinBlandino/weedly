@@ -1,9 +1,10 @@
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Text, View } from 'react-native';
+import { activeTent } from '@/selectors';
 import { useStore } from '@/store';
 import { colors, fonts } from '@/theme';
-import { Card, Field, IconButton, Muted, PrimaryButton, Rise, Screen, Title } from '@/ui';
+import { Card, Empty, Field, IconButton, Muted, PrimaryButton, Rise, Screen, Title } from '@/ui';
 import { fmt, fmtDateTime, parseNum, vpd } from '@/utils';
 
 export default function ClimaScreen() {
@@ -14,20 +15,27 @@ export default function ClimaScreen() {
   const h = parseNum(rh);
   const valid = t != null && h != null && h >= 0 && h <= 100 && t > -10 && t < 60;
   const v = valid ? vpd(t!, h!) : undefined;
+  const tent = activeTent(s);
   const history = s.climate.filter((c) => c.tentId === s.activeTentId).slice(0, 10);
 
   const save = () => {
-    if (!valid) return;
-    s.addClimate({ tentId: s.activeTentId, date: new Date().toISOString(), tempC: t!, rh: h!, source: 'manual' });
+    if (!valid || !tent) return;
+    s.addClimate({ tentId: tent.id, date: new Date().toISOString(), tempC: t!, rh: h!, source: 'manual' });
     router.back();
   };
 
   return (
-    <Screen footer={<PrimaryButton label="Guardar lectura" disabled={!valid} onPress={save} style={{ flex: 1 }} />}>
+    <Screen footer={<PrimaryButton label="Guardar lectura" disabled={!valid || !tent} onPress={save} style={{ flex: 1 }} />}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Title size={28}>Clima de la carpa</Title>
         <IconButton icon="close" label="Cerrar" onPress={() => router.back()} />
       </View>
+
+      {!tent ? (
+        <View style={{ marginTop: 18 }}>
+          <Empty text="Necesitás una carpa activa para guardar el clima. Volvé a la pantalla Carpa y revisá que esté creada." />
+        </View>
+      ) : null}
 
       <Rise delay={40}>
         <View style={{ flexDirection: 'row', gap: 10, marginTop: 18 }}>

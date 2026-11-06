@@ -6,7 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { useHydrationStatus } from '@/store';
+import { useHydrationStatus, useStore } from '@/store';
 import { colors } from '@/theme';
 import { Body, Screen, Title } from '@/ui';
 
@@ -19,6 +19,7 @@ export default function RootLayout() {
     Inter_700Bold,
   });
   const hydration = useHydrationStatus();
+  const hasTent = useStore((s) => s.tents.length > 0);
 
   if (!loaded || hydration === 'pending') {
     return (
@@ -55,15 +56,21 @@ export default function RootLayout() {
           animation: 'fade_from_bottom',
         }}
       >
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="planta/[id]" />
-        <Stack.Screen name="editar-planta/[id]" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="riego" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="foto" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="clima" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="genetica/[id]" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="receta/[id]" options={{ presentation: 'modal' }} />
-        <Stack.Screen name="fertilizante/[id]" options={{ presentation: 'modal' }} />
+        {/* Una pantalla protegida nunca se dibuja: solo redirige. Acá el store ya está hidratado. */}
+        <Stack.Protected guard={hasTent} redirectTo="/onboarding">
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="planta/[id]" />
+          <Stack.Screen name="editar-planta/[id]" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="riego" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="foto" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="clima" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="genetica/[id]" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="receta/[id]" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="fertilizante/[id]" options={{ presentation: 'modal' }} />
+        </Stack.Protected>
+        <Stack.Protected guard={!hasTent} redirectTo="/">
+          <Stack.Screen name="onboarding" options={{ gestureEnabled: false, animation: 'none' }} />
+        </Stack.Protected>
       </Stack>
     </SafeAreaProvider>
   );

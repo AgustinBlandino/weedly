@@ -4,7 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 import { activePlants, needsWater } from '@/selectors';
 import { useStore } from '@/store';
 import { colors, fonts, radius } from '@/theme';
-import { Card, Chip, Field, IconButton, Muted, PrimaryButton, Rise, Screen, Title, Toggle } from '@/ui';
+import { Card, Chip, Empty, Field, IconButton, Muted, PrimaryButton, Rise, Screen, Title, Toggle } from '@/ui';
 import { fmt, fmtDateTime, parseNum } from '@/utils';
 
 export default function RiegoScreen() {
@@ -13,7 +13,7 @@ export default function RiegoScreen() {
   const list = activePlants(s);
 
   const [selected, setSelected] = useState<string[]>(() => {
-    if (plantId) return [plantId];
+    if (plantId && list.some((x) => x.plant.id === plantId)) return [plantId];
     const thirsty = list.filter((x) => needsWater(s, x.plant.id)).map((x) => x.plant.id);
     return thirsty;
   });
@@ -57,6 +57,20 @@ export default function RiegoScreen() {
     });
     router.back();
   };
+
+  if (!list.length) {
+    return (
+      <Screen>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Title size={28}>Registrar riego</Title>
+          <IconButton icon="close" label="Cerrar" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
+        </View>
+        <Rise delay={40} style={{ marginTop: 18 }}>
+          <Empty text="Todavía no hay plantas para regar. Cuando tengas una planta en la carpa, vas a poder registrar sus riegos desde acá." />
+        </Rise>
+      </Screen>
+    );
+  }
 
   return (
     <Screen

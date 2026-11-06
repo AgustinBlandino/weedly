@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, Pressable, Share, Text, View } from 'react-native';
+import { namastePack } from '@/seed';
 import { exportDataJson, IS_TEST_STORE, STORE_KEY, useStore } from '@/store';
 import { colors, fonts, radius } from '@/theme';
 import { Body, Card, Chip, Empty, Field, H2, Muted, PrimaryButton, Rise, Screen, Title } from '@/ui';
@@ -22,6 +23,8 @@ export default function BibliotecaScreen() {
   const s = useStore();
   const [seg, setSeg] = useState<Seg>('geneticas');
   const [every, setEvery] = useState(String(s.settings.wateringEveryDays));
+
+  const missingFromPack = namastePack.filter((p) => !s.fertilizers.some((f) => f.id === p.id)).length;
 
   const addRoute: Record<Exclude<Seg, 'ajustes'>, string> = {
     geneticas: '/genetica/nueva',
@@ -69,16 +72,32 @@ export default function BibliotecaScreen() {
           )
         ) : null}
 
-        {seg === 'fertilizantes'
-          ? s.fertilizers.map((f) => (
-              <Row
-                key={f.id}
-                title={f.name}
-                subtitle={[f.brand, f.kind].filter(Boolean).join(' · ')}
-                onPress={() => router.push(`/fertilizante/${f.id}`)}
-              />
-            ))
-          : null}
+        {seg === 'fertilizantes' ? (
+          <>
+            {s.fertilizers.length ? (
+              s.fertilizers.map((f) => (
+                <Row
+                  key={f.id}
+                  title={f.name}
+                  subtitle={[f.brand, f.kind].filter(Boolean).join(' · ')}
+                  onPress={() => router.push(`/fertilizante/${f.id}`)}
+                />
+              ))
+            ) : (
+              <Empty text="Todavía no tenés fertilizantes. Sumá el pack Namasté o cargá los tuyos con el botón +." />
+            )}
+            {missingFromPack ? (
+              <>
+                <PrimaryButton label="Sumar pack Namasté" icon="add" onPress={s.addNamastePack} />
+                {s.fertilizers.length ? (
+                  <Muted>
+                    {missingFromPack === 1 ? 'Falta 1 producto del pack.' : `Faltan ${missingFromPack} productos del pack.`}
+                  </Muted>
+                ) : null}
+              </>
+            ) : null}
+          </>
+        ) : null}
 
         {seg === 'recetas' ? (
           s.recipes.length ? (
