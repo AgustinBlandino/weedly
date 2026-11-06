@@ -6,7 +6,9 @@ import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useHydrationStatus } from '@/store';
 import { colors } from '@/theme';
+import { Body, Screen, Title } from '@/ui';
 
 export default function RootLayout() {
   const [loaded] = useFonts({
@@ -16,12 +18,30 @@ export default function RootLayout() {
     Inter_600SemiBold,
     Inter_700Bold,
   });
+  const hydration = useHydrationStatus();
 
-  if (!loaded) {
+  if (!loaded || hydration === 'pending') {
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator color={colors.lime} />
       </View>
+    );
+  }
+
+  // Sin datos cargados no se entra a la app: usar el store podría pisar lo guardado.
+  if (hydration === 'error') {
+    return (
+      <SafeAreaProvider>
+        <StatusBar style="light" />
+        <Screen scroll={false}>
+          <View accessible accessibilityRole="alert" style={{ flex: 1, justifyContent: 'center', gap: 10 }}>
+            <Title>No pude leer tus datos</Title>
+            <Body style={{ color: colors.textSoft }}>
+              No se tocó nada de lo que tenías guardado. Conviene que cierres la app y la vuelvas a abrir.
+            </Body>
+          </View>
+        </Screen>
+      </SafeAreaProvider>
     );
   }
 

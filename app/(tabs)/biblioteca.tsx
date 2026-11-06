@@ -1,13 +1,22 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
-import { useStore } from '@/store';
-import { colors, fonts } from '@/theme';
-import { Card, Chip, Empty, Field, Muted, Rise, Screen, Title } from '@/ui';
+import { Alert, Pressable, Share, Text, View } from 'react-native';
+import { exportDataJson, IS_TEST_STORE, STORE_KEY, useStore } from '@/store';
+import { colors, fonts, radius } from '@/theme';
+import { Body, Card, Chip, Empty, Field, H2, Muted, PrimaryButton, Rise, Screen, Title } from '@/ui';
 import { fmt, parseNum } from '@/utils';
 
 type Seg = 'geneticas' | 'fertilizantes' | 'recetas' | 'ajustes';
+
+// Cancelar el share resuelve la promesa con normalidad: solo un rechazo o una falla al armar el JSON es un error.
+async function exportCopy() {
+  try {
+    await Share.share({ message: exportDataJson() });
+  } catch {
+    Alert.alert('No pude exportar la copia', 'Tus datos siguen intactos. Probá de nuevo en un rato.');
+  }
+}
 
 export default function BibliotecaScreen() {
   const s = useStore();
@@ -92,19 +101,32 @@ export default function BibliotecaScreen() {
         ) : null}
 
         {seg === 'ajustes' ? (
-          <Card style={{ gap: 10 }}>
-            <Field
-              label="Avisar riego cada cuántos días"
-              value={every}
-              onChangeText={(v) => {
-                setEvery(v);
-                const n = parseNum(v);
-                if (n != null && n >= 1 && n <= 30) s.updateSettings({ wateringEveryDays: Math.round(n) });
-              }}
-              keyboardType="numeric"
-            />
-            <Muted>Las macetas se marcan en ámbar cuando pasan estos días desde su último riego.</Muted>
-          </Card>
+          <>
+            <Card style={{ gap: 10 }}>
+              <Field
+                label="Avisar riego cada cuántos días"
+                value={every}
+                onChangeText={(v) => {
+                  setEvery(v);
+                  const n = parseNum(v);
+                  if (n != null && n >= 1 && n <= 30) s.updateSettings({ wateringEveryDays: Math.round(n) });
+                }}
+                keyboardType="numeric"
+              />
+              <Muted>Las macetas se marcan en ámbar cuando pasan estos días desde su último riego.</Muted>
+            </Card>
+
+            <Card style={{ gap: 10 }}>
+              <H2>Tus datos</H2>
+              {IS_TEST_STORE ? (
+                <View style={{ backgroundColor: colors.floraBg, borderRadius: radius.sm, padding: 12 }}>
+                  <Body style={{ color: colors.flora }}>Espacio de prueba: {STORE_KEY}</Body>
+                </View>
+              ) : null}
+              <PrimaryButton label="Exportar copia (JSON)" icon="share-outline" onPress={exportCopy} />
+              <Muted>La copia incluye tus registros, pero no las imágenes de las fotos.</Muted>
+            </Card>
+          </>
         ) : null}
       </Rise>
     </Screen>

@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSyncExternalStore } from 'react';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import {
@@ -26,6 +27,12 @@ import type {
   Watering,
 } from './types';
 import { uid } from './utils';
+
+const STORE_VERSION = 1;
+
+// Acceso literal: Expo inlinea process.env.EXPO_PUBLIC_* en build.
+export const STORE_KEY: string = process.env.EXPO_PUBLIC_STORE_KEY || 'weedly-data';
+export const IS_TEST_STORE: boolean = STORE_KEY !== 'weedly-data';
 
 interface Data {
   tents: Tent[];
@@ -90,6 +97,28 @@ function upsert<T extends { id: string }>(list: T[], item: T): T[] {
   const next = list.slice();
   next[i] = item;
   return next;
+}
+
+type HydrationStatus = 'pending' | 'ok' | 'error';
+
+// Vive fuera de React y antes de create(): la hidratación arranca al crear el store.
+let hydrationStatus: HydrationStatus = 'pending';
+const hydrationListeners = new Set<() => void>();
+
+function setHydrationStatus(status: HydrationStatus) {
+  hydrationStatus = status;
+  hydrationListeners.forEach((listener) => listener());
+}
+
+function subscribeHydration(listener: () => void) {
+  hydrationListeners.add(listener);
+  return () => {
+    hydrationListeners.delete(listener);
+  };
+}
+
+function getHydrationStatus() {
+  return hydrationStatus;
 }
 
 export const useStore = create<Store>()(
@@ -165,9 +194,43 @@ export const useStore = create<Store>()(
       updateSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
     }),
     {
-      name: 'weedly-data',
-      version: 1,
+      name: STORE_KEY,
+      version: STORE_VERSION,
       storage: createJSONStorage(() => AsyncStorage),
+      onRehydrateStorage: () => {
+        setHydrationStatus('pending');
+        return (state, error) => setHydrationStatus(state && !error ? 'ok' : 'error');
+      },
     },
   ),
 );
+
+export function useHydrationStatus(): HydrationStatus {
+  return useSyncExternalStore(subscribeHydration, getHydrationStatus, getHydrationStatus);
+}
+
+export function exportDataJson(): string {
+  const s = useStore.getState();
+  // Record<keyof Data, ...> hace fallar a tsc si se agrega un campo a Data y no se exporta.
+  const data: Record<keyof Data, unknown> = {
+    tents: s.tents,
+    cycles: s.cycles,
+    pots: s.pots,
+    plants: s.plants,
+    phases: s.phases,
+    genetics: s.genetics,
+    fertilizers: s.fertilizers,
+    recipes: s.recipes,
+    waterings: s.waterings,
+    climate: s.climate,
+    photos: s.photos,
+    tastings: s.tastings,
+    settings: s.settings,
+    activeTentId: s.activeTentId,
+  };
+  return JSON.stringify(
+    { app: 'weedly', exportedAt: new Date().toISOString(), storeKey: STORE_KEY, version: STORE_VERSION, data },
+    null,
+    2,
+  );
+}
