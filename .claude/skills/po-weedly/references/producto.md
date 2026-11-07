@@ -9,7 +9,10 @@ App mobile (Android e iPhone) de seguimiento de cultivo indoor. Hoy es de uso pe
 Agus, un solo usuario. Cultivo: carpa de 80×80×160 cm, 6 macetas de 10 L en tierra (2 columnas, 3 filas), plantas fotoperiódicas feminizadas, germinadas el 30/07/2026 y en flora desde el 08/09. Luz LED, planea SCROG. Fertiliza con el Nutripack de Namasté (marca argentina, orgánico). Tiene iPhone y no tiene Mac, así que prueba con Expo Go y los builds de iOS pasan por EAS.
 
 ## Qué hace la versión actual (v0.1)
-- Carpa en vista 3D isométrica o lista, con foto de portada sobre cada maceta.
+- Onboarding: armar la carpa, arrancar de cero o con plantas en curso.
+- Stock de semillas por genética, plantado en macetas vacías y descarte de plantas.
+- Cierre de ciclo, ciclo nuevo e historial de ciclos anteriores.
+- Carpa en vista 3D isométrica o lista, con plantas renderizadas según su fase.
 - Ficha de planta: fase y días calculados, barra vege/flora, descripción, riegos, fotos, genética, cata.
 - Registro de riego a varias plantas: receta con ml según litros, pH, EC y runoff opcional, aviso cada N días.
 - Fotos con descripción y etiquetas (poda, LST, plaga...), con opción de portada.
@@ -31,13 +34,12 @@ Agus, un solo usuario. Cultivo: carpa de 80×80×160 cm, 6 macetas de 10 L en ti
 - **Las plantas descartadas no se borran**: conservan su historial en el diario y liberan la maceta.
 
 ## Tensiones y huecos conocidos (verificalos en el código antes de usarlos)
-- **El seed es el ciclo de Agus.** Los datos iniciales del store son su carpa, sus macetas y sus fechas. Para otro grower hace falta onboarding (crear carpa, ciclo, macetas y plantas) y un estado vacío decente.
 - **Multiusuario cambia todo el modelo de datos**: cuentas, datos por usuario, seguridad de acceso en Supabase, y qué pasa con los datos locales existentes.
 - **Fotos como URIs locales** del selector: no son permanentes y son el principal riesgo al sincronizar.
-- **Sin acciones en el store para crear/archivar carpas, ciclos, macetas o plantas.** Hoy solo se editan los precargados. Sin esto no hay "varias carpas" ni "historial de ciclos" ni onboarding.
+- **Una sola carpa por usuario en la app.** El store admite varias, pero falta la interfaz para crear otra y cambiar entre ellas.
 - **Fases secado y curado existen en el tipo `Phase`**, pero no hay registro de cosecha (pesos, rendimiento) ni seguimiento de secado/curado.
 - **Clima solo manual**; el campo `source` reserva el valor `sensor` pero no hay integración.
-- **Solo español**, coma decimal, unidades métricas, fertilizantes precargados de una marca argentina. Para otros países hay que pensar localización y catálogo de fertilizantes.
+- **Solo español**, coma decimal, unidades métricas, y el único pack de fertilizantes es de una marca argentina. Para otros países hay que pensar localización y catálogo de fertilizantes.
 - **Cannabis tiene un marco legal distinto por país y las tiendas de apps (App Store, Google Play) tienen políticas propias sobre apps de este rubro.** Antes de publicar para terceros hay que revisarlo. Es un riesgo de producto, no técnico.
 - Sin tests ni lint: los cambios de dominio se validan a mano, y el estado guardado de Agus es valioso.
 
