@@ -322,7 +322,7 @@ export default function CarpaScreen() {
           <Empty
             text={
               list.length
-                ? 'Sacale una foto a cada planta: la última queda como portada en la carpa 3D.'
+                ? 'Sacale una foto a cada planta: la última queda como portada en su ficha y en la lista.'
                 : 'Cuando tengas plantas, vas a poder sacarles fotos y ver acá las últimas.'
             }
           />

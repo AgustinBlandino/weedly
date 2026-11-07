@@ -64,7 +64,7 @@ export default function GeneticaScreen() {
 
   const remove = () =>
     existing &&
-    Alert.alert('Borrar genética', `¿Borrar ${existing.name}? Las plantas que la usan quedan sin genética.`, [
+    Alert.alert('Borrar genética', `¿Borrar ${existing.name}? Las plantas que la usan quedan sin genética, también las de ciclos cerrados.`, [
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Borrar',
