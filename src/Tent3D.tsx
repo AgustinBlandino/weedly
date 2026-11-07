@@ -9,8 +9,9 @@ import {
   Text,
   View,
 } from 'react-native';
-import { PlantSprite, SPRITE_ANCHOR_Y, SPRITE_UNITS } from './PlantSprite';
+import { EmptyPotSprite, PlantSprite, SPRITE_ANCHOR_Y, SPRITE_HEIGHT, SPRITE_UNITS } from './PlantSprite';
 import { colors, fonts } from './theme';
+import type { Phase } from './types';
 
 export interface TentItem {
   id: string; // plantId
@@ -19,6 +20,7 @@ export interface TentItem {
   col: number;
   coverUri?: string;
   alert: boolean;
+  phase?: Phase;
 }
 
 export interface TentEmptySlot {
@@ -55,49 +57,6 @@ const POT_WALL = 0.62; // alto de la maceta vacía, relativo a su ancho
 const MIN_TOUCH = 44;
 
 const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
-
-// Un círculo acostado se proyecta igual desde cualquier ángulo: por eso la maceta no depende del giro.
-function FlatCircle({ cx, cy, size, color }: { cx: number; cy: number; size: number; color: string }) {
-  return (
-    <View
-      style={{
-        position: 'absolute',
-        left: cx - size / 2,
-        top: cy - size / 2,
-        width: size,
-        height: size,
-        borderRadius: size / 2,
-        backgroundColor: color,
-        transform: [{ scaleY: COS_A }],
-      }}
-    />
-  );
-}
-
-function EmptyPot({ sx, sy, size }: { sx: number; sy: number; size: number }) {
-  const wall = size * POT_WALL;
-  return (
-    <View pointerEvents="none" style={{ position: 'absolute', left: 0, top: 0 }}>
-      <FlatCircle cx={sx} cy={sy + 1} size={size * 1.25} color={colors.bgDeep} />
-      <FlatCircle cx={sx} cy={sy} size={size} color={colors.pot} />
-      <View
-        style={{
-          position: 'absolute',
-          left: sx - size / 2,
-          top: sy - wall,
-          width: size,
-          height: wall,
-          backgroundColor: colors.pot,
-          borderLeftWidth: 1,
-          borderRightWidth: 1,
-          borderColor: colors.potEdge,
-        }}
-      />
-      <FlatCircle cx={sx} cy={sy - wall} size={size} color={colors.potRim} />
-      <FlatCircle cx={sx} cy={sy - wall} size={size * 0.8} color={colors.bgDeep} />
-    </View>
-  );
-}
 
 export function Tent3D({
   items,
@@ -308,7 +267,12 @@ export function Tent3D({
           const touchH = Math.max(MIN_TOUCH, wall + potSize * COS_A);
           return (
             <React.Fragment key={`slot-${slot.id}`}>
-              <EmptyPot sx={sx} sy={sy} size={potSize} />
+              <View
+                pointerEvents="none"
+                style={{ position: 'absolute', left: sx - spriteSize / 2, top: sy - spriteSize * SPRITE_ANCHOR_Y }}
+              >
+                <EmptyPotSprite size={spriteSize} />
+              </View>
               {slot.onPress ? (
                 <Pressable
                   accessibilityRole="button"
@@ -327,7 +291,7 @@ export function Tent3D({
           );
         }
         const { it } = entry;
-        const labelTop = sy - plantH - 8;
+        const labelTop = sy - plantH * SPRITE_HEIGHT[it.phase ?? 'flora'] - 8;
         return (
           <React.Fragment key={`plant-${it.id}`}>
             <View
@@ -335,7 +299,7 @@ export function Tent3D({
               style={{ position: 'absolute', left: sx - spriteSize / 2, top: sy - spriteSize * SPRITE_ANCHOR_Y }}
             >
               {/* Cada planta arranca en un ángulo propio para que no se vean clonadas. */}
-              <PlantSprite angle={theta + (it.row * 3 + it.col * 5) * 37} size={spriteSize} />
+              <PlantSprite angle={theta + (it.row * 3 + it.col * 5) * 37} size={spriteSize} phase={it.phase} />
             </View>
             <Animated.View
               pointerEvents="none"

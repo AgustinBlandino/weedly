@@ -46,6 +46,7 @@ export default function CarpaScreen() {
     col: pot.col,
     coverUri: coverOf(s, plant)?.uri,
     alert: needsWater(s, plant.id),
+    phase: summarize(s, plant).phase,
   }));
   const plantIn = (potId: string) => router.push(`/plantar/${potId}`);
   const slots = empties.map((pot) => ({ id: pot.id, row: pot.row, col: pot.col, onPress: () => plantIn(pot.id) }));
