@@ -69,9 +69,19 @@ export function Body({ children, style, numberOfLines }: { children: React.React
   );
 }
 
-export function Muted({ children, style, numberOfLines }: { children: React.ReactNode; style?: StyleProp<TextStyle>; numberOfLines?: number }) {
+export function Muted({
+  children,
+  style,
+  numberOfLines,
+  accessibilityRole,
+}: {
+  children: React.ReactNode;
+  style?: StyleProp<TextStyle>;
+  numberOfLines?: number;
+  accessibilityRole?: 'alert';
+}) {
   return (
-    <Text numberOfLines={numberOfLines} style={[{ fontFamily: fonts.body, fontSize: 12, color: colors.muted }, style]}>
+    <Text accessibilityRole={accessibilityRole} numberOfLines={numberOfLines} style={[{ fontFamily: fonts.body, fontSize: 12, color: colors.muted }, style]}>
       {children}
     </Text>
   );

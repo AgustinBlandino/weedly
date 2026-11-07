@@ -137,4 +137,5 @@ export interface Tasting {
 
 export interface Settings {
   wateringEveryDays: number;
+  firstStepsDismissed?: boolean;
 }

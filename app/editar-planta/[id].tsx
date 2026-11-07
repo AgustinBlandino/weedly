@@ -28,7 +28,11 @@ export default function EditarPlantaScreen() {
   if (!plant || !pot) {
     return (
       <Screen>
-        <Body>No encontré esa planta.</Body>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Title size={28}>Editar planta</Title>
+          <IconButton icon="close" label="Cerrar" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
+        </View>
+        <Body style={{ marginTop: 18, color: colors.textSoft }}>No encontré esa planta. Puede que ya no exista.</Body>
       </Screen>
     );
   }
@@ -41,8 +45,11 @@ export default function EditarPlantaScreen() {
       return;
     }
     s.updatePlant(plant.id, { name: name.trim() || plant.name, germinationDate: germ, geneticId, description: description.trim() });
-    const l = parseNum(liters);
-    s.updatePot(pot.id, { liters: l ?? pot.liters, substrate: substrate.trim() });
+    // La maceta de una planta descartada ya puede ser de otra planta.
+    if (!plant.endedAt) {
+      const l = parseNum(liters);
+      s.updatePot(pot.id, { liters: l ?? pot.liters, substrate: substrate.trim() });
+    }
     phases.forEach((p) => {
       const d = phaseDates[p.id];
       if (d && d !== p.date) {
@@ -96,10 +103,12 @@ export default function EditarPlantaScreen() {
           </View>
         </View>
 
-        <View style={{ flexDirection: 'row', gap: 10 }}>
-          <Field label="Litros de maceta" value={liters} onChangeText={setLiters} keyboardType="decimal-pad" style={{ flex: 1 }} />
-          <Field label="Sustrato" value={substrate} onChangeText={setSubstrate} style={{ flex: 1 }} />
-        </View>
+        {plant.endedAt ? null : (
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <Field label="Litros de maceta" value={liters} onChangeText={setLiters} keyboardType="decimal-pad" style={{ flex: 1 }} />
+            <Field label="Sustrato" value={substrate} onChangeText={setSubstrate} style={{ flex: 1 }} />
+          </View>
+        )}
 
         <Field label="Germinación (AAAA-MM-DD)" value={germ} onChangeText={setGerm} autoCapitalize="none" />
 

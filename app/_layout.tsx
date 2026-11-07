@@ -61,6 +61,7 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="planta/[id]" />
           <Stack.Screen name="editar-planta/[id]" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="plantar/[potId]" options={{ presentation: 'modal' }} />
           <Stack.Screen name="riego" options={{ presentation: 'modal' }} />
           <Stack.Screen name="foto" options={{ presentation: 'modal' }} />
           <Stack.Screen name="clima" options={{ presentation: 'modal' }} />

@@ -64,11 +64,12 @@ export default function BibliotecaScreen() {
                 title={g.name}
                 subtitle={[g.breeder, g.type, g.floweringDays ? `${g.floweringDays} d flora` : ''].filter(Boolean).join(' · ')}
                 extra={[...g.effects, ...g.flavors].slice(0, 4).join(' · ')}
+                trailing={seedsLabel(g.seedsAvailable)}
                 onPress={() => router.push(`/genetica/${g.id}`)}
               />
             ))
           ) : (
-            <Empty text="Cargá tus genéticas con lo que dice el banco: efectos, sabores y días de flora. Después se las asignás a cada planta." />
+            <Empty text="Cargá tus genéticas con lo que dice el banco y cuántas semillas tenés. Cada semilla que plantes se descuenta sola." />
           )
         ) : null}
 
@@ -152,7 +153,25 @@ export default function BibliotecaScreen() {
   );
 }
 
-function Row({ title, subtitle, extra, onPress }: { title: string; subtitle?: string; extra?: string; onPress: () => void }) {
+function seedsLabel(seeds?: number): string {
+  if (seeds == null) return 'Semillas sin cargar';
+  if (seeds === 0) return 'Sin semillas';
+  return seeds === 1 ? '1 semilla' : `${seeds} semillas`;
+}
+
+function Row({
+  title,
+  subtitle,
+  extra,
+  trailing,
+  onPress,
+}: {
+  title: string;
+  subtitle?: string;
+  extra?: string;
+  trailing?: string;
+  onPress: () => void;
+}) {
   return (
     <Pressable
       onPress={onPress}
@@ -165,6 +184,7 @@ function Row({ title, subtitle, extra, onPress }: { title: string; subtitle?: st
           {subtitle ? <Muted>{subtitle}</Muted> : null}
           {extra ? <Muted style={{ color: colors.textSoft }}>{extra}</Muted> : null}
         </View>
+        {trailing ? <Muted style={{ color: colors.textSoft, maxWidth: 90, textAlign: 'right' }}>{trailing}</Muted> : null}
         <Ionicons name="chevron-forward" size={18} color={colors.muted} />
       </Card>
     </Pressable>

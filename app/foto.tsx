@@ -17,7 +17,8 @@ export default function FotoScreen() {
   const { plantId: param } = useLocalSearchParams<{ plantId?: string }>();
   const s = useStore();
   const list = activePlants(s);
-  const initial = s.plants.some((p) => p.id === param) ? param : undefined;
+  // Una planta descartada no se ofrece: solo vale si sigue activa.
+  const initial = list.some((x) => x.plant.id === param) ? param : undefined;
   const [plantId, setPlantId] = useState<string | undefined>(initial ?? list[0]?.plant.id);
   const [uri, setUri] = useState<string | undefined>();
   const [description, setDescription] = useState('');
@@ -50,7 +51,7 @@ export default function FotoScreen() {
     router.back();
   };
 
-  if (!list.length && !initial) {
+  if (!list.length) {
     return (
       <Screen>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>

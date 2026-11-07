@@ -3,12 +3,14 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import type { FirstStep } from '@/selectors';
 import {
   activeCycle,
   activePlants,
   activeTent,
   coverOf,
   emptyPots,
+  firstSteps,
   lastWatering,
   latestClimate,
   needsWater,
@@ -19,7 +21,7 @@ import { useStore } from '@/store';
 import { Tent3D } from '@/Tent3D';
 import { colors, fonts, radius } from '@/theme';
 import { PHASE_LABEL } from '@/types';
-import { Body, Card, Empty, IconButton, Muted, Rise, SectionHeader, Title } from '@/ui';
+import { Body, Card, Empty, H2, IconButton, Muted, Rise, SectionHeader, Title } from '@/ui';
 import { fmt, relDays } from '@/utils';
 
 export default function CarpaScreen() {
@@ -42,12 +44,22 @@ export default function CarpaScreen() {
     coverUri: coverOf(s, plant)?.uri,
     alert: needsWater(s, plant.id),
   }));
-  const slots = empties.map((pot) => ({ id: pot.id, row: pot.row, col: pot.col }));
+  const plantIn = (potId: string) => router.push(`/plantar/${potId}`);
+  const slots = empties.map((pot) => ({ id: pot.id, row: pot.row, col: pot.col, onPress: () => plantIn(pot.id) }));
+  const getStarted = firstSteps(s);
+  const stepActions: Record<FirstStep['id'], (() => void) | undefined> = {
+    genetica: () => router.push('/genetica/nueva'),
+    plantar: empties[0] ? () => plantIn(empties[0].id) : undefined,
+    riego: () => router.push('/riego'),
+    foto: () => router.push('/foto'),
+  };
 
   const status = thirsty.length
     ? `${thirsty.map((x) => x.plant.name).join(', ')} toca regar`
     : !list.length
-      ? 'Todavía no hay plantas en la carpa'
+      ? empties.length
+        ? 'Tocá una maceta vacía para plantar'
+        : 'Todavía no hay plantas en la carpa'
       : s.waterings.length
         ? 'Riegos al día'
         : 'Todavía no cargaste riegos';
@@ -83,6 +95,45 @@ export default function CarpaScreen() {
             </Card>
           </Pressable>
         </Rise>
+
+        {getStarted.visible ? (
+          <Rise delay={100}>
+            <Card style={{ marginTop: 14, gap: 4 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <H2>Primeros pasos</H2>
+                <IconButton
+                  icon="close"
+                  label="Ocultar primeros pasos"
+                  bg="transparent"
+                  color={colors.muted}
+                  onPress={() => s.updateSettings({ firstStepsDismissed: true })}
+                />
+              </View>
+              {getStarted.steps.map((step) => {
+                const action = stepActions[step.id];
+                return (
+                  <Pressable
+                    key={step.id}
+                    onPress={action}
+                    disabled={!action}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${step.label}: ${step.done ? 'hecho' : 'pendiente'}`}
+                    accessibilityState={{ disabled: !action }}
+                    style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 10 }}
+                  >
+                    <Ionicons
+                      name={step.done ? 'checkmark-circle' : 'ellipse-outline'}
+                      size={22}
+                      color={step.done ? colors.lime : colors.border}
+                    />
+                    <Body style={{ flex: 1, color: step.done ? colors.muted : colors.text }}>{step.label}</Body>
+                    {action ? <Ionicons name="chevron-forward" size={18} color={colors.muted} /> : null}
+                  </Pressable>
+                );
+              })}
+            </Card>
+          </Rise>
+        ) : null}
 
         <Rise delay={140}>
           {!tent || !cycle ? (
@@ -195,11 +246,12 @@ export default function CarpaScreen() {
                     );
                   })}
                   {empties.map((pot) => (
-                    <View
+                    <Pressable
                       key={pot.id}
-                      accessible
-                      accessibilityLabel={`Maceta vacía de ${fmt(pot.liters)} litros, ${pot.substrate}`}
-                      style={{
+                      onPress={() => plantIn(pot.id)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Plantar en maceta vacía de ${fmt(pot.liters)} litros, ${pot.substrate}`}
+                      style={({ pressed }) => ({
                         width: '48%',
                         borderRadius: 20,
                         borderWidth: 1.5,
@@ -207,14 +259,15 @@ export default function CarpaScreen() {
                         borderColor: colors.border,
                         padding: 12,
                         gap: 8,
-                      }}
+                        transform: [{ scale: pressed ? 0.97 : 1 }],
+                      })}
                     >
                       <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.pot, borderWidth: 3, borderColor: colors.potRim }} />
                       <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: colors.textSoft }}>Maceta vacía</Text>
                       <Muted>
                         {fmt(pot.liters)} L · {pot.substrate}
                       </Muted>
-                    </View>
+                    </Pressable>
                   ))}
                 </View>
               )}

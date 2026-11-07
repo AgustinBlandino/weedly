@@ -116,6 +116,25 @@ export function tentHeadline(s: Store): string {
     .join(' · ');
 }
 
+export interface FirstStep {
+  id: 'genetica' | 'plantar' | 'riego' | 'foto';
+  label: string;
+  done: boolean;
+}
+
+export function firstSteps(s: Store): { steps: FirstStep[]; visible: boolean } {
+  const steps: FirstStep[] = [
+    { id: 'genetica', label: 'Cargar una genética', done: s.genetics.length > 0 },
+    { id: 'plantar', label: 'Plantar la primera semilla', done: s.plants.length > 0 },
+    { id: 'riego', label: 'Primer riego', done: s.waterings.length > 0 },
+    { id: 'foto', label: 'Primera foto', done: s.photos.length > 0 },
+  ];
+  // 'tent-1' solo existe en la instalación anterior al onboarding, con el cultivo real de Agus, que no debe ver la tarjeta.
+  const isOriginalInstall = s.tents.some((t) => t.id === 'tent-1');
+  const visible = !s.settings.firstStepsDismissed && !isOriginalInstall && !steps.every((step) => step.done);
+  return { steps, visible };
+}
+
 export function latestClimate(s: Store) {
   const c = s.climate.find((x) => x.tentId === s.activeTentId);
   return c ? { ...c, vpd: vpd(c.tempC, c.rh) } : undefined;

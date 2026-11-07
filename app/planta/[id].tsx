@@ -9,7 +9,7 @@ import { colors, fonts, radius } from '@/theme';
 import { TiltPhoto } from '@/TiltPhoto';
 import { Phase, PHASE_LABEL } from '@/types';
 import { Body, Card, Chip, Empty, Field, H2, IconButton, Muted, PrimaryButton, Rise, Title } from '@/ui';
-import { fmt, fmtDate, fmtDateTime, parseNum, relDays, today } from '@/utils';
+import { daysBetween, fmt, fmtDate, fmtDateTime, parseDate, parseNum, relDays, today } from '@/utils';
 
 type Tab = 'resumen' | 'riegos' | 'fotos' | 'genetica' | 'cata';
 const TABS: { id: Tab; label: string }[] = [
@@ -48,7 +48,10 @@ export default function PlantaScreen() {
   const sum = summarize(s, plant);
   const cover = coverOf(s, plant);
   const lw = lastWatering(s, plant.id);
-  const next = NEXT_PHASE[sum.phase];
+  const endedAt = plant.endedAt;
+  const next = endedAt ? undefined : NEXT_PHASE[sum.phase];
+  // summarize cuenta hasta hoy: una planta descartada se queda en el día que terminó.
+  const livedDays = endedAt ? Math.max(0, daysBetween(plant.germinationDate, endedAt)) : sum.dayOfLife;
 
   const advancePhase = () => {
     if (!next) return;
@@ -57,6 +60,24 @@ export default function PlantaScreen() {
       { text: 'Confirmar', onPress: () => s.changePhase(plant.id, next, today()) },
     ]);
   };
+
+  const discard = () =>
+    Alert.alert(
+      `Descartar ${plant.name}`,
+      'Su historial se conserva y la maceta queda libre para plantar otra. La semilla no vuelve a tu stock.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Descartar',
+          style: 'destructive',
+          onPress: () => {
+            s.discardPlant(plant.id, today());
+            if (router.canDismiss()) router.dismissTo('/');
+            else router.replace('/');
+          },
+        },
+      ],
+    );
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
@@ -67,8 +88,22 @@ export default function PlantaScreen() {
           <IconButton icon="create-outline" label="Editar planta" onPress={() => router.push(`/editar-planta/${plant.id}`)} />
         </View>
 
+        {endedAt ? (
+          <View
+            accessible
+            style={{ marginTop: 14, backgroundColor: colors.floraBg, borderRadius: radius.sm, padding: 12, gap: 2 }}
+          >
+            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: colors.flora }}>
+              Descartada el {fmtDate(endedAt)} {parseDate(endedAt).getFullYear()}
+            </Text>
+            <Body style={{ fontSize: 13, color: colors.textSoft }}>
+              Vivió {livedDays} {livedDays === 1 ? 'día' : 'días'}. Su historial queda guardado.
+            </Body>
+          </View>
+        ) : null}
+
         <Rise delay={40} style={{ marginTop: 14 }}>
-          <TiltPhoto uri={cover?.uri} emptyLabel={`Sacale la primera foto a ${plant.name}`}>
+          <TiltPhoto uri={cover?.uri} emptyLabel={endedAt ? 'Sin fotos' : `Sacale la primera foto a ${plant.name}`}>
             <Text
               style={{
                 position: 'absolute',
@@ -84,7 +119,7 @@ export default function PlantaScreen() {
                 overflow: 'hidden',
               }}
             >
-              {PHASE_LABEL[sum.phase]} · día {sum.dayInPhase}
+              {endedAt ? PHASE_LABEL[sum.phase] : `${PHASE_LABEL[sum.phase]} · día ${sum.dayInPhase}`}
             </Text>
             <View
               style={{
@@ -107,9 +142,11 @@ export default function PlantaScreen() {
           </TiltPhoto>
         </Rise>
 
-        <View style={{ marginTop: 16 }}>
-          <PhaseBar s={sum} />
-        </View>
+        {endedAt ? null : (
+          <View style={{ marginTop: 16 }}>
+            <PhaseBar s={sum} />
+          </View>
+        )}
 
         {next ? (
           <Pressable onPress={advancePhase} accessibilityRole="button" style={{ alignSelf: 'flex-start', marginTop: 12 }}>
@@ -142,7 +179,7 @@ export default function PlantaScreen() {
                 <Empty text="Agregá una descripción: estructura, olor, cómo viene respondiendo." />
               )}
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 6 }}>
-                <Mini label="Día de vida" value={`${sum.dayOfLife}`} />
+                <Mini label={endedAt ? 'Días de vida' : 'Día de vida'} value={`${livedDays}`} />
                 <Mini label="Sustrato" value={pot?.substrate ?? '—'} />
                 <Mini label="Último riego" value={lw ? relDays(lw.date) : '—'} />
                 <Mini label="Fotos" value={`${photosOf(s, plant.id).length}`} />
@@ -151,7 +188,7 @@ export default function PlantaScreen() {
           ) : null}
 
           {tab === 'riegos' ? <RiegosTab plantId={plant.id} /> : null}
-          {tab === 'fotos' ? <FotosTab plantId={plant.id} /> : null}
+          {tab === 'fotos' ? <FotosTab plantId={plant.id} ended={!!endedAt} /> : null}
 
           {tab === 'genetica' ? (
             genetic ? (
@@ -176,29 +213,43 @@ export default function PlantaScreen() {
             ) : (
               <>
                 <Empty text="Esta planta no tiene genética asignada." />
-                <PrimaryButton label="Asignar genética" onPress={() => router.push(`/editar-planta/${plant.id}`)} />
+                {endedAt ? null : (
+                  <PrimaryButton label="Asignar genética" onPress={() => router.push(`/editar-planta/${plant.id}`)} />
+                )}
               </>
             )
           ) : null}
 
           {tab === 'cata' ? <CataTab plantId={plant.id} /> : null}
         </Rise>
+
+        {endedAt ? null : (
+          <Pressable
+            onPress={discard}
+            accessibilityRole="button"
+            style={{ alignSelf: 'center', minHeight: 44, justifyContent: 'center', paddingHorizontal: 12, marginTop: 20 }}
+          >
+            <Text style={{ color: colors.danger, fontFamily: fonts.bodySemi, fontSize: 14 }}>Descartar planta</Text>
+          </Pressable>
+        )}
       </ScrollView>
 
-      <View style={{ position: 'absolute', left: 20, right: 20, bottom: 24, flexDirection: 'row', gap: 10 }}>
-        <IconButton
-          icon="camera-outline"
-          label="Agregar foto"
-          size={56}
-          onPress={() => router.push({ pathname: '/foto', params: { plantId: plant.id } })}
-        />
-        <PrimaryButton
-          label="Regar"
-          icon="water"
-          style={{ flex: 1 }}
-          onPress={() => router.push({ pathname: '/riego', params: { plantId: plant.id } })}
-        />
-      </View>
+      {endedAt ? null : (
+        <View style={{ position: 'absolute', left: 20, right: 20, bottom: 24, flexDirection: 'row', gap: 10 }}>
+          <IconButton
+            icon="camera-outline"
+            label="Agregar foto"
+            size={56}
+            onPress={() => router.push({ pathname: '/foto', params: { plantId: plant.id } })}
+          />
+          <PrimaryButton
+            label="Regar"
+            icon="water"
+            style={{ flex: 1 }}
+            onPress={() => router.push({ pathname: '/riego', params: { plantId: plant.id } })}
+          />
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -274,11 +325,11 @@ function RiegosTab({ plantId }: { plantId: string }) {
   );
 }
 
-function FotosTab({ plantId }: { plantId: string }) {
+function FotosTab({ plantId, ended }: { plantId: string; ended: boolean }) {
   const s = useStore();
   const list = photosOf(s, plantId);
   const plant = s.plants.find((p) => p.id === plantId);
-  if (!list.length) return <Empty text="Sin fotos todavía. Tocá la cámara de abajo." />;
+  if (!list.length) return <Empty text={ended ? 'Esta planta no tiene fotos.' : 'Sin fotos todavía. Tocá la cámara de abajo.'} />;
   return (
     <View style={{ gap: 14 }}>
       {list.map((p) => (
