@@ -3,13 +3,13 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PhaseBar } from '@/PhaseBar';
-import { coverOf, lastWatering, photosOf, summarize, wateringsOf } from '@/selectors';
+import { coverOf, isPlantActive, lastWatering, photosOf, plantCycle, summarize, wateringsOf } from '@/selectors';
 import { useStore } from '@/store';
 import { colors, fonts, radius } from '@/theme';
 import { TiltPhoto } from '@/TiltPhoto';
 import { Phase, PHASE_LABEL } from '@/types';
 import { Body, Card, Chip, Empty, Field, H2, IconButton, Muted, PrimaryButton, Rise, Title } from '@/ui';
-import { daysBetween, fmt, fmtDate, fmtDateTime, parseDate, parseNum, relDays, today } from '@/utils';
+import { fmt, fmtDate, fmtDateTime, fmtDateYear, parseNum, relDays, today } from '@/utils';
 
 type Tab = 'resumen' | 'riegos' | 'fotos' | 'genetica' | 'cata';
 const TABS: { id: Tab; label: string }[] = [
@@ -48,10 +48,13 @@ export default function PlantaScreen() {
   const sum = summarize(s, plant);
   const cover = coverOf(s, plant);
   const lw = lastWatering(s, plant.id);
-  const endedAt = plant.endedAt;
-  const next = endedAt ? undefined : NEXT_PHASE[sum.phase];
-  // summarize cuenta hasta hoy: una planta descartada se queda en el día que terminó.
-  const livedDays = endedAt ? Math.max(0, daysBetween(plant.germinationDate, endedAt)) : sum.dayOfLife;
+  const active = isPlantActive(s, plant);
+  const next = active ? NEXT_PHASE[sum.phase] : undefined;
+  const cycle = plantCycle(s, plant);
+  const notices = [
+    cycle?.status === 'archivado' ? `Ciclo cerrado${cycle.endDate ? ` el ${fmtDateYear(cycle.endDate)}` : ''}` : '',
+    plant.endedAt ? `Descartada el ${fmtDateYear(plant.endedAt)}` : '',
+  ].filter(Boolean);
 
   const advancePhase = () => {
     if (!next) return;
@@ -83,27 +86,27 @@ export default function PlantaScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 120 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <IconButton icon="arrow-back" label="Volver" onPress={() => router.back()} />
+          <IconButton icon="arrow-back" label="Volver" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
           <Title size={24}>{plant.name}</Title>
           <IconButton icon="create-outline" label="Editar planta" onPress={() => router.push(`/editar-planta/${plant.id}`)} />
         </View>
 
-        {endedAt ? (
+        {notices.length ? (
           <View
             accessible
             style={{ marginTop: 14, backgroundColor: colors.floraBg, borderRadius: radius.sm, padding: 12, gap: 2 }}
           >
-            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: colors.flora }}>
-              Descartada el {fmtDate(endedAt)} {parseDate(endedAt).getFullYear()}
-            </Text>
-            <Body style={{ fontSize: 13, color: colors.textSoft }}>
-              Vivió {livedDays} {livedDays === 1 ? 'día' : 'días'}. Su historial queda guardado.
-            </Body>
+            {notices.map((notice) => (
+              <Text key={notice} style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: colors.flora }}>
+                {notice}
+              </Text>
+            ))}
+            <Body style={{ fontSize: 13, color: colors.textSoft }}>Su historial queda guardado.</Body>
           </View>
         ) : null}
 
         <Rise delay={40} style={{ marginTop: 14 }}>
-          <TiltPhoto uri={cover?.uri} emptyLabel={endedAt ? 'Sin fotos' : `Sacale la primera foto a ${plant.name}`}>
+          <TiltPhoto uri={cover?.uri} emptyLabel={active ? `Sacale la primera foto a ${plant.name}` : 'Sin fotos'}>
             <Text
               style={{
                 position: 'absolute',
@@ -119,7 +122,7 @@ export default function PlantaScreen() {
                 overflow: 'hidden',
               }}
             >
-              {endedAt ? PHASE_LABEL[sum.phase] : `${PHASE_LABEL[sum.phase]} · día ${sum.dayInPhase}`}
+              {PHASE_LABEL[sum.phase]} · día {sum.dayInPhase}
             </Text>
             <View
               style={{
@@ -142,11 +145,9 @@ export default function PlantaScreen() {
           </TiltPhoto>
         </Rise>
 
-        {endedAt ? null : (
-          <View style={{ marginTop: 16 }}>
-            <PhaseBar s={sum} />
-          </View>
-        )}
+        <View style={{ marginTop: 16 }}>
+          <PhaseBar s={sum} />
+        </View>
 
         {next ? (
           <Pressable onPress={advancePhase} accessibilityRole="button" style={{ alignSelf: 'flex-start', marginTop: 12 }}>
@@ -179,7 +180,7 @@ export default function PlantaScreen() {
                 <Empty text="Agregá una descripción: estructura, olor, cómo viene respondiendo." />
               )}
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 6 }}>
-                <Mini label={endedAt ? 'Días de vida' : 'Día de vida'} value={`${livedDays}`} />
+                <Mini label="Día de vida" value={`${sum.dayOfLife}`} />
                 <Mini label="Sustrato" value={pot?.substrate ?? '—'} />
                 <Mini label="Último riego" value={lw ? relDays(lw.date) : '—'} />
                 <Mini label="Fotos" value={`${photosOf(s, plant.id).length}`} />
@@ -187,8 +188,8 @@ export default function PlantaScreen() {
             </>
           ) : null}
 
-          {tab === 'riegos' ? <RiegosTab plantId={plant.id} /> : null}
-          {tab === 'fotos' ? <FotosTab plantId={plant.id} ended={!!endedAt} /> : null}
+          {tab === 'riegos' ? <RiegosTab plantId={plant.id} readOnly={!active} /> : null}
+          {tab === 'fotos' ? <FotosTab plantId={plant.id} readOnly={!active} /> : null}
 
           {tab === 'genetica' ? (
             genetic ? (
@@ -213,7 +214,7 @@ export default function PlantaScreen() {
             ) : (
               <>
                 <Empty text="Esta planta no tiene genética asignada." />
-                {endedAt ? null : (
+                {!active ? null : (
                   <PrimaryButton label="Asignar genética" onPress={() => router.push(`/editar-planta/${plant.id}`)} />
                 )}
               </>
@@ -223,7 +224,7 @@ export default function PlantaScreen() {
           {tab === 'cata' ? <CataTab plantId={plant.id} /> : null}
         </Rise>
 
-        {endedAt ? null : (
+        {!active ? null : (
           <Pressable
             onPress={discard}
             accessibilityRole="button"
@@ -234,7 +235,7 @@ export default function PlantaScreen() {
         )}
       </ScrollView>
 
-      {endedAt ? null : (
+      {!active ? null : (
         <View style={{ position: 'absolute', left: 20, right: 20, bottom: 24, flexDirection: 'row', gap: 10 }}>
           <IconButton
             icon="camera-outline"
@@ -285,7 +286,7 @@ function ChipList({ items, empty }: { items: string[]; empty: string }) {
   );
 }
 
-function RiegosTab({ plantId }: { plantId: string }) {
+function RiegosTab({ plantId, readOnly }: { plantId: string; readOnly: boolean }) {
   const s = useStore();
   const list = wateringsOf(s, plantId);
   if (!list.length) return <Empty text="Todavía no hay riegos para esta planta." />;
@@ -294,6 +295,7 @@ function RiegosTab({ plantId }: { plantId: string }) {
       {list.map((w) => (
         <Pressable
           key={w.id}
+          disabled={readOnly}
           onLongPress={() =>
             Alert.alert('Borrar riego', `¿Borrar el riego del ${fmtDateTime(w.date)}? Se borra para todas las plantas de ese riego.`, [
               { text: 'Cancelar', style: 'cancel' },
@@ -320,21 +322,22 @@ function RiegosTab({ plantId }: { plantId: string }) {
           </Card>
         </Pressable>
       ))}
-      <Muted>Mantené apretado un riego para borrarlo.</Muted>
+      {readOnly ? null : <Muted>Mantené apretado un riego para borrarlo.</Muted>}
     </>
   );
 }
 
-function FotosTab({ plantId, ended }: { plantId: string; ended: boolean }) {
+function FotosTab({ plantId, readOnly }: { plantId: string; readOnly: boolean }) {
   const s = useStore();
   const list = photosOf(s, plantId);
   const plant = s.plants.find((p) => p.id === plantId);
-  if (!list.length) return <Empty text={ended ? 'Esta planta no tiene fotos.' : 'Sin fotos todavía. Tocá la cámara de abajo.'} />;
+  if (!list.length) return <Empty text={readOnly ? 'Esta planta no tiene fotos.' : 'Sin fotos todavía. Tocá la cámara de abajo.'} />;
   return (
     <View style={{ gap: 14 }}>
       {list.map((p) => (
         <Pressable
           key={p.id}
+          disabled={readOnly}
           onPress={() =>
             Alert.alert('Foto', fmtDateTime(p.date), [
               { text: 'Usar como portada', onPress: () => s.setCover(plantId, p.id) },

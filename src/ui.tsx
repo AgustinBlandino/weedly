@@ -19,7 +19,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, radius } from './theme';
-import { fmtDate, isValidYmd, parseDate, toYmd } from './utils';
+import { fmtDateYear, isValidYmd, parseDate, toYmd } from './utils';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -254,7 +254,7 @@ export function DateField({
   const current = atTime(valid ? value : toYmd(new Date()), 12);
   const minimumDate = minDate ? atTime(minDate, 0) : undefined;
   const maximumDate = maxDate ? atTime(maxDate, 23, 59, 59) : undefined;
-  const text = valid ? `${fmtDate(value)} ${parseDate(value).getFullYear()}` : 'Elegí una fecha';
+  const text = valid ? fmtDateYear(value) : 'Elegí una fecha';
 
   const commit = (ymd: string) => {
     let next = ymd;
@@ -354,6 +354,38 @@ export function DateField({
           </View>
         </Modal>
       ) : null}
+    </View>
+  );
+}
+
+export function Stepper({
+  label,
+  unit,
+  value,
+  min,
+  max,
+  onChange,
+}: {
+  label: string;
+  unit: string;
+  value: number;
+  min: number;
+  max: number;
+  onChange: (n: number) => void;
+}) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text }}>{label}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <IconButton icon="remove" label={`Una ${unit} menos`} onPress={() => onChange(Math.max(min, value - 1))} />
+        <Text
+          accessibilityLiveRegion="polite"
+          style={{ fontFamily: fonts.displaySemi, fontSize: 26, color: colors.text, minWidth: 36, textAlign: 'center' }}
+        >
+          {value}
+        </Text>
+        <IconButton icon="add" label={`Una ${unit} más`} onPress={() => onChange(Math.min(max, value + 1))} />
+      </View>
     </View>
   );
 }

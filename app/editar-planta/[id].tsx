@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
-import { phasesOf } from '@/selectors';
+import { isPlantActive, phasesOf } from '@/selectors';
 import { useStore } from '@/store';
 import { colors, fonts } from '@/theme';
 import { PHASE_LABEL } from '@/types';
@@ -37,6 +37,8 @@ export default function EditarPlantaScreen() {
     );
   }
 
+  // La maceta de una planta terminada ya no es suya: puede tener otra planta o ser de un ciclo cerrado.
+  const editsPot = isPlantActive(s, plant);
   const badDates = !isValidYmd(germ) || Object.values(phaseDates).some((d) => !isValidYmd(d));
 
   const save = () => {
@@ -45,8 +47,7 @@ export default function EditarPlantaScreen() {
       return;
     }
     s.updatePlant(plant.id, { name: name.trim() || plant.name, germinationDate: germ, geneticId, description: description.trim() });
-    // La maceta de una planta descartada ya puede ser de otra planta.
-    if (!plant.endedAt) {
+    if (editsPot) {
       const l = parseNum(liters);
       s.updatePot(pot.id, { liters: l ?? pot.liters, substrate: substrate.trim() });
     }
@@ -103,7 +104,7 @@ export default function EditarPlantaScreen() {
           </View>
         </View>
 
-        {plant.endedAt ? null : (
+        {!editsPot ? null : (
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <Field label="Litros de maceta" value={liters} onChangeText={setLiters} keyboardType="decimal-pad" style={{ flex: 1 }} />
             <Field label="Sustrato" value={substrate} onChangeText={setSubstrate} style={{ flex: 1 }} />

@@ -1,6 +1,6 @@
 import type { Store } from './store';
 import { PHASE_LABEL } from './types';
-import type { Phase, PhaseChange, Photo, Plant, Watering } from './types';
+import type { Cycle, Phase, PhaseChange, Photo, Plant, Pot, Watering } from './types';
 import { daysBetween, today, toYmd, parseDate, vpd } from './utils';
 
 export interface PlantSummary {
@@ -11,6 +11,8 @@ export interface PlantSummary {
   floraDays: number;
   floraTarget?: number;
   floraRemaining?: number;
+  /** Descartada o de un ciclo cerrado: sus días ya no avanzan. */
+  ended: boolean;
 }
 
 export function phasesOf(s: Store, plantId: string): PhaseChange[] {
@@ -19,8 +21,21 @@ export function phasesOf(s: Store, plantId: string): PhaseChange[] {
     .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 }
 
+export function plantCycle(s: Store, plant: Plant): Cycle | undefined {
+  const pot = s.pots.find((p) => p.id === plant.potId);
+  return pot ? s.cycles.find((c) => c.id === pot.cycleId) : undefined;
+}
+
+/** Sigue creciendo: ni descartada ni en un ciclo cerrado. */
+export function isPlantActive(s: Store, plant: Plant): boolean {
+  return !plant.endedAt && plantCycle(s, plant)?.status !== 'archivado';
+}
+
 export function summarize(s: Store, plant: Plant): PlantSummary {
-  const t = today();
+  const cycle = plantCycle(s, plant);
+  const ended = !isPlantActive(s, plant);
+  // Fecha de corte: nada de lo posterior cuenta en una planta terminada.
+  const t = plant.endedAt ?? (cycle?.status === 'archivado' ? cycle.endDate : undefined) ?? today();
   const list = phasesOf(s, plant.id).filter((p) => p.date <= t);
   const current = list[list.length - 1];
   const phase: Phase = current ? current.phase : 'germinacion';
@@ -36,7 +51,7 @@ export function summarize(s: Store, plant: Plant): PlantSummary {
   const genetic = s.genetics.find((g) => g.id === plant.geneticId);
   const floraTarget = genetic?.floweringDays;
   const floraRemaining =
-    floraTarget && phase === 'flora' ? Math.max(0, floraTarget - floraDays) : undefined;
+    !ended && floraTarget && phase === 'flora' ? Math.max(0, floraTarget - floraDays) : undefined;
 
   return {
     phase,
@@ -46,6 +61,7 @@ export function summarize(s: Store, plant: Plant): PlantSummary {
     floraDays,
     floraTarget,
     floraRemaining,
+    ended,
   };
 }
 
@@ -114,6 +130,58 @@ export function tentHeadline(s: Store): string {
     .sort((a, b) => b[1] - a[1])
     .map(([phase, count]) => `${count} en ${PHASE_LABEL[phase].toLowerCase()}`)
     .join(' · ');
+}
+
+/** Fotos de las plantas del ciclo activo, también de las descartadas. Las de ciclos cerrados quedan en su historial. */
+export function activeCyclePhotos(s: Store): Photo[] {
+  const cycle = activeCycle(s);
+  if (!cycle) return [];
+  return s.photos.filter((photo) => {
+    const plant = s.plants.find((p) => p.id === photo.plantId);
+    return !!plant && plantCycle(s, plant)?.id === cycle.id;
+  });
+}
+
+export function cyclePlants(s: Store, cycleId: string): { plant: Plant; pot: Pot }[] {
+  return s.pots
+    .filter((pot) => pot.cycleId === cycleId)
+    .sort((a, b) => a.row - b.row || a.col - b.col)
+    .flatMap((pot) => s.plants.filter((plant) => plant.potId === pot.id).map((plant) => ({ plant, pot })));
+}
+
+/** Ciclos cerrados de la carpa activa, del más reciente al más viejo. */
+export function archivedCycles(s: Store): { cycle: Cycle; plantCount: number }[] {
+  return s.cycles
+    .filter((c) => c.tentId === s.activeTentId && c.status === 'archivado')
+    .map((cycle) => ({ cycle, plantCount: cyclePlants(s, cycle.id).length }))
+    .sort((a, b) => (b.cycle.endDate ?? '').localeCompare(a.cycle.endDate ?? ''));
+}
+
+export interface NewCycleDefaults {
+  name: string;
+  potCount: number;
+  liters: number;
+  substrate: string;
+  maxPots: number;
+  /** Un ciclo no arranca antes de que haya cerrado el anterior. */
+  minStartDate?: string;
+}
+
+/** Valores iniciales de un ciclo nuevo, tomados del último ciclo de la carpa. */
+export function newCycleDefaults(s: Store, tentId: string): NewCycleDefaults {
+  const tent = s.tents.find((t) => t.id === tentId);
+  const maxPots = Math.max(1, (tent?.rows ?? 1) * (tent?.cols ?? 1));
+  const cycles = s.cycles.filter((c) => c.tentId === tentId);
+  const last = cycles[cycles.length - 1];
+  const pots = last ? s.pots.filter((p) => p.cycleId === last.id) : [];
+  return {
+    name: `Ciclo ${cycles.length + 1}`,
+    potCount: Math.max(1, Math.min(pots.length || maxPots, maxPots)),
+    liters: pots[0]?.liters ?? 10,
+    substrate: pots[0]?.substrate ?? 'Tierra',
+    maxPots,
+    minStartDate: last?.endDate,
+  };
 }
 
 export interface FirstStep {

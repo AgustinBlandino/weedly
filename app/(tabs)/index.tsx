@@ -6,8 +6,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { FirstStep } from '@/selectors';
 import {
   activeCycle,
+  activeCyclePhotos,
   activePlants,
   activeTent,
+  archivedCycles,
   coverOf,
   emptyPots,
   firstSteps,
@@ -21,8 +23,8 @@ import { useStore } from '@/store';
 import { Tent3D } from '@/Tent3D';
 import { colors, fonts, radius } from '@/theme';
 import { PHASE_LABEL } from '@/types';
-import { Body, Card, Empty, H2, IconButton, Muted, Rise, SectionHeader, Title } from '@/ui';
-import { fmt, relDays } from '@/utils';
+import { Body, Card, Empty, H2, IconButton, Muted, PrimaryButton, Rise, SectionHeader, Title } from '@/ui';
+import { fmt, fmtDateYear, relDays } from '@/utils';
 
 export default function CarpaScreen() {
   const s = useStore();
@@ -34,7 +36,8 @@ export default function CarpaScreen() {
   const climate = latestClimate(s);
 
   const thirsty = list.filter((x) => needsWater(s, x.plant.id));
-  const recentPhotos = s.photos.slice(0, 8);
+  const recentPhotos = activeCyclePhotos(s).slice(0, 8);
+  const pastCycles = archivedCycles(s);
 
   const items = list.map(({ plant, pot }) => ({
     id: plant.id,
@@ -60,7 +63,7 @@ export default function CarpaScreen() {
       ? empties.length
         ? 'Tocá una maceta vacía para plantar'
         : 'Todavía no hay plantas en la carpa'
-      : s.waterings.length
+      : list.some((x) => lastWatering(s, x.plant.id))
         ? 'Riegos al día'
         : 'Todavía no cargaste riegos';
 
@@ -70,7 +73,7 @@ export default function CarpaScreen() {
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <View style={{ gap: 4, flex: 1 }}>
             <Muted style={{ fontSize: 13 }}>
-              {tent ? `${tent.name} · ${fmt(tent.heightCm)} cm` : 'Tu carpa'}
+              {tent ? `${tent.name} · ${fmt(tent.heightCm)} cm${cycle ? ` · ${cycle.name}` : ''}` : 'Tu carpa'}
             </Muted>
             <Title size={32}>{cycle ? tentHeadline(s) : 'Sin ciclo activo'}</Title>
           </View>
@@ -136,16 +139,18 @@ export default function CarpaScreen() {
         ) : null}
 
         <Rise delay={140}>
-          {!tent || !cycle ? (
+          {!tent ? (
             <View style={{ marginTop: 14 }}>
-              <Empty
-                text={
-                  tent
-                    ? 'Esta carpa no tiene un ciclo activo. Tus datos siguen guardados; pronto vas a poder arrancar un ciclo nuevo desde acá.'
-                    : 'No encontré la carpa activa. Tus datos siguen guardados.'
-                }
-              />
+              <Empty text="No encontré la carpa activa. Tus datos siguen guardados." />
             </View>
+          ) : !cycle ? (
+            <Card style={{ marginTop: 14, gap: 12 }}>
+              <H2>Tu carpa está lista</H2>
+              <Body style={{ color: colors.textSoft }}>
+                Empezá un ciclo nuevo para volver a plantar. Lo de los ciclos anteriores sigue guardado.
+              </Body>
+              <PrimaryButton label="Empezar ciclo nuevo" icon="add" onPress={() => router.push('/ciclo/nuevo')} />
+            </Card>
           ) : (
             <View
               style={{
@@ -278,6 +283,15 @@ export default function CarpaScreen() {
               </View>
             </View>
           )}
+          {tent && cycle ? (
+            <Pressable
+              onPress={() => router.push('/ciclo/cerrar')}
+              accessibilityRole="button"
+              style={{ alignSelf: 'center', minHeight: 44, justifyContent: 'center', paddingHorizontal: 12, marginTop: 4 }}
+            >
+              <Muted style={{ fontSize: 13, color: colors.textSoft }}>Cerrar ciclo</Muted>
+            </Pressable>
+          ) : null}
         </Rise>
 
         <SectionHeader title="Fotos recientes" action={list.length ? '+ Foto' : undefined} onAction={() => router.push('/foto')} />
@@ -312,6 +326,34 @@ export default function CarpaScreen() {
             }
           />
         )}
+
+        {pastCycles.length ? (
+          <>
+            <SectionHeader title="Ciclos anteriores" />
+            <View style={{ gap: 10 }}>
+              {pastCycles.map(({ cycle: past, plantCount }) => (
+                <Pressable
+                  key={past.id}
+                  onPress={() => router.push(`/ciclo/${past.id}`)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Abrir ${past.name}`}
+                  style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.98 : 1 }] })}
+                >
+                  <Card style={{ padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                    <View style={{ flex: 1, gap: 3 }}>
+                      <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text }}>{past.name}</Text>
+                      <Muted>
+                        {fmtDateYear(past.startDate)}
+                        {past.endDate ? ` – ${fmtDateYear(past.endDate)}` : ''} · {plantCount} {plantCount === 1 ? 'planta' : 'plantas'}
+                      </Muted>
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+                  </Card>
+                </Pressable>
+              ))}
+            </View>
+          </>
+        ) : null}
       </ScrollView>
 
       {list.length ? (

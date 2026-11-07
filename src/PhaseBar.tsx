@@ -19,9 +19,11 @@ export function PhaseBar({ s }: { s: PlantSummary }) {
         <Muted>Vege {s.vegeDays} d</Muted>
         <Muted>Flora {s.floraDays} d</Muted>
         <Muted>
-          {s.floraTarget
-            ? `Faltan ~${remaining} d (breeder: ${s.floraTarget} d)`
-            : `Día ${s.dayOfLife} desde germinación`}
+          {s.ended
+            ? `${s.dayOfLife} d de vida`
+            : s.floraTarget
+              ? `Faltan ~${remaining} d (breeder: ${s.floraTarget} d)`
+              : `Día ${s.dayOfLife} desde germinación`}
         </Muted>
       </View>
     </View>

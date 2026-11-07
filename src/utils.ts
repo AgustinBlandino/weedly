@@ -44,6 +44,10 @@ export function fmtDate(s: string): string {
   return `${d.getDate()} ${MONTHS[d.getMonth()]}`;
 }
 
+export function fmtDateYear(s: string): string {
+  return `${fmtDate(s)} ${parseDate(s).getFullYear()}`;
+}
+
 export function fmtDateTime(s: string): string {
   const d = parseDate(s);
   const hh = String(d.getHours()).padStart(2, '0');

@@ -17,7 +17,7 @@ import { useStore } from '@/store';
 import type { ExistingPlantsInput } from '@/store';
 import { Tent3D } from '@/Tent3D';
 import { colors, fonts, radius } from '@/theme';
-import { Body, Chip, DateField, Field, H2, IconButton, Muted, PrimaryButton, Rise, Title } from '@/ui';
+import { Body, Chip, DateField, Field, H2, IconButton, Muted, PrimaryButton, Rise, Stepper, Title } from '@/ui';
 import { fmt, parseNum, today } from '@/utils';
 
 const SIZE_PRESETS = [
@@ -517,38 +517,6 @@ function ErrorText({ text }: { text: string }) {
     <Text accessibilityRole="alert" style={{ fontFamily: fonts.body, fontSize: 12, color: colors.danger }}>
       {text}
     </Text>
-  );
-}
-
-function Stepper({
-  label,
-  unit,
-  value,
-  min,
-  max,
-  onChange,
-}: {
-  label: string;
-  unit: string;
-  value: number;
-  min: number;
-  max: number;
-  onChange: (n: number) => void;
-}) {
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text }}>{label}</Text>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <IconButton icon="remove" label={`Una ${unit} menos`} onPress={() => onChange(Math.max(min, value - 1))} />
-        <Text
-          accessibilityLiveRegion="polite"
-          style={{ fontFamily: fonts.displaySemi, fontSize: 26, color: colors.text, minWidth: 36, textAlign: 'center' }}
-        >
-          {value}
-        </Text>
-        <IconButton icon="add" label={`Una ${unit} más`} onPress={() => onChange(Math.min(max, value + 1))} />
-      </View>
-    </View>
   );
 }
 
