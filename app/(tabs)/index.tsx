@@ -29,7 +29,7 @@ import { Tent3D } from '@/Tent3D';
 import { colors, fonts, radius } from '@/theme';
 import { PHASE_LABEL } from '@/types';
 import { Body, Card, Empty, H2, IconButton, Muted, PrimaryButton, Rise, SectionHeader, Title } from '@/ui';
-import { fmt, relDays } from '@/utils';
+import { daysBetween, fmt, parseDate, relDays, toYmd, today } from '@/utils';
 
 export default function CarpaScreen() {
   const s = useStore();
@@ -39,16 +39,31 @@ export default function CarpaScreen() {
   const list = activePlants(s);
   const empties = emptyPots(s);
   const climate = latestClimate(s);
+  // Lectura vieja: más de 24 h desde la última carga.
+  const climateStale = !!climate && Date.now() - parseDate(climate.date).getTime() > 24 * 60 * 60 * 1000;
+  const climateLabel = climate
+    ? `Clima: ${Math.round(climate.tempC)} grados, ${Math.round(climate.rh)} por ciento de humedad, ${spokenAge(climate.date)}`
+    : 'Sin lecturas de clima, cargar la primera';
+  const vpdLabel = climate
+    ? `VPD ${fmt(climate.vpd)} kilopascales, ${spokenAge(climate.date)}`
+    : 'Sin VPD, cargar la primera lectura de clima';
+  const climateFresh = !!climate && !climateStale;
+  const openClimate = () => router.push('/clima');
 
   const thirsty = list.filter((x) => needsWater(s, x.plant.id));
   const recentPhotos = activeCyclePhotos(s).slice(0, 8);
   const lastClosed = cycle ? undefined : archivedCycles(s)[0]?.cycle;
   const genetics = activeGenetics(s);
   const lighting = cycle ? cycleLightingHeadline(s, cycle) : '';
-  const hasLights = !!cycle?.lights?.length;
   const density = cycle ? lightDensity(s, cycle) : undefined;
   // Luminaria del dibujo 3D: apagada si no hay ninguna; cálida si todas las de tipo conocido no son LED.
   const cycleLightList = cycle ? cycleLights(s, cycle) : [];
+  const hasLights = cycleLightList.length > 0;
+  const lightPill = density
+    ? `${density.wPerM2} W/m²`
+    : hasLights
+      ? `${fmt(cycleLightList.reduce((sum, l) => sum + l.watts, 0))} W`
+      : 'Sin iluminación';
   const typedLights = cycleLightList.filter((l) => l.type);
   const tentLighting = {
     on: cycleLightList.length > 0,
@@ -94,7 +109,37 @@ export default function CarpaScreen() {
           <Title size={24} style={{ flex: 1 }}>
             {cycle ? tentHeadline(s) : 'Sin ciclo activo'}
           </Title>
-          <IconButton icon="thermometer-outline" label="Cargar clima" onPress={() => router.push('/clima')} />
+          {tent && cycle ? (
+            <View style={{ flexShrink: 0, flexDirection: 'row', backgroundColor: colors.cardAlt, borderRadius: 12, padding: 3 }}>
+              {(['3d', 'lista'] as const).map((v) => (
+                <Pressable
+                  key={v}
+                  onPress={() => setView(v)}
+                  accessibilityRole="button"
+                  accessibilityLabel={v === '3d' ? 'Vista 3D' : 'Vista en lista'}
+                  accessibilityState={{ selected: view === v }}
+                  hitSlop={8}
+                  style={{
+                    height: 28,
+                    paddingHorizontal: 12,
+                    borderRadius: 10,
+                    justifyContent: 'center',
+                    backgroundColor: view === v ? colors.lime : 'transparent',
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontFamily: view === v ? fonts.bodySemi : fonts.body,
+                      fontSize: 12,
+                      color: view === v ? colors.bg : colors.textSoft,
+                    }}
+                  >
+                    {v === '3d' ? '3D' : 'Lista'}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
         </View>
 
         <Rise delay={60}>
@@ -130,41 +175,66 @@ export default function CarpaScreen() {
             </Card>
           ) : (
             <View style={{ marginHorizontal: -20, marginTop: 4 }}>
-              <View
-                style={{
-                  alignSelf: 'flex-end',
-                  marginRight: 20,
-                  flexDirection: 'row',
-                  backgroundColor: colors.cardAlt,
-                  borderRadius: 12,
-                  padding: 3,
-                }}
-              >
-                {(['3d', 'lista'] as const).map((v) => (
-                  <Pressable
-                    key={v}
-                    onPress={() => setView(v)}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: view === v }}
+              {/* Pastillas: clima, VPD e iluminación. Si no entran, se achica primero la de iluminación. */}
+              <View style={{ marginHorizontal: 20, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Pressable
+                  onPress={openClimate}
+                  accessibilityRole="button"
+                  accessibilityLabel={climateLabel}
+                  accessibilityHint="Abre el clima de la carpa"
+                  hitSlop={5}
+                  style={({ pressed }) => [pillStyle, { flexShrink: 0, transform: [{ scale: pressed ? 0.96 : 1 }] }]}
+                >
+                  <Ionicons name="thermometer-outline" size={16} color={climateFresh ? colors.lime : colors.muted} />
+                  <Text
+                    numberOfLines={1}
                     style={{
-                      height: 28,
-                      paddingHorizontal: 12,
-                      borderRadius: 10,
-                      justifyContent: 'center',
-                      backgroundColor: view === v ? colors.lime : 'transparent',
+                      fontFamily: fonts.bodySemi,
+                      fontSize: 12,
+                      fontVariant: ['tabular-nums'],
+                      color: climateFresh ? colors.text : colors.muted,
                     }}
                   >
-                    <Text
-                      style={{
-                        fontFamily: view === v ? fonts.bodySemi : fonts.body,
-                        fontSize: 12,
-                        color: view === v ? colors.bg : colors.textSoft,
-                      }}
-                    >
-                      {v === '3d' ? '3D' : 'Lista'}
-                    </Text>
-                  </Pressable>
-                ))}
+                    {climate ? `${Math.round(climate.tempC)}° · ${Math.round(climate.rh)}%` : '-- · --'}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={openClimate}
+                  accessibilityRole="button"
+                  accessibilityLabel={vpdLabel}
+                  accessibilityHint="Abre el clima de la carpa"
+                  hitSlop={5}
+                  style={({ pressed }) => [pillStyle, { flexShrink: 0, transform: [{ scale: pressed ? 0.96 : 1 }] }]}
+                >
+                  <Ionicons name="water-outline" size={16} color={climateFresh ? colors.lime : colors.muted} />
+                  <Text
+                    numberOfLines={1}
+                    style={{
+                      fontFamily: fonts.bodySemi,
+                      fontSize: 12,
+                      fontVariant: ['tabular-nums'],
+                      color: climateFresh ? colors.text : colors.muted,
+                    }}
+                  >
+                    {climate ? `VPD ${fmt(climate.vpd)}` : 'VPD --'}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => router.push('/ciclo/iluminacion')}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Iluminación: ${lighting}${density?.ppfdApprox != null ? `, aproximadamente ${density.ppfdApprox} micromoles por metro cuadrado por segundo, promedio estimado` : ''}`}
+                  accessibilityHint="Abre la iluminación del ciclo"
+                  hitSlop={5}
+                  style={({ pressed }) => [pillStyle, { flexShrink: 1, transform: [{ scale: pressed ? 0.96 : 1 }] }]}
+                >
+                  <Ionicons name={hasLights ? 'bulb' : 'bulb-outline'} size={16} color={hasLights ? colors.lime : colors.muted} />
+                  <Text
+                    numberOfLines={1}
+                    style={{ flexShrink: 1, fontFamily: fonts.bodySemi, fontSize: 12, color: hasLights ? colors.text : colors.textSoft }}
+                  >
+                    {lightPill}
+                  </Text>
+                </Pressable>
               </View>
 
               {view === '3d' ? (
@@ -262,10 +332,7 @@ export default function CarpaScreen() {
               )}
 
               <View style={{ paddingHorizontal: 20, gap: 10 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
-                  <Muted style={{ flex: 1, color: thirsty.length ? colors.flora : colors.muted }}>{status}</Muted>
-                  {view === '3d' ? <Muted>Arrastrá para girar</Muted> : null}
-                </View>
+                <Muted style={{ color: thirsty.length ? colors.flora : colors.muted }}>{status}</Muted>
                 {genetics.length ? (
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                     {genetics.map((g) => (
@@ -292,56 +359,9 @@ export default function CarpaScreen() {
                     ))}
                   </View>
                 ) : null}
-                <Pressable
-                  onPress={() => router.push('/ciclo/iluminacion')}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Iluminación: ${lighting}${density?.ppfdApprox != null ? `, aproximadamente ${density.ppfdApprox} micromoles por metro cuadrado por segundo, promedio estimado` : ''}`}
-                  accessibilityHint="Abre la iluminación del ciclo"
-                  style={({ pressed }) => ({
-                    minHeight: 44,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 10,
-                    paddingHorizontal: 12,
-                    paddingVertical: 8,
-                    borderRadius: radius.sm,
-                    backgroundColor: colors.card,
-                    transform: [{ scale: pressed ? 0.98 : 1 }],
-                  })}
-                >
-                  <Ionicons name="bulb-outline" size={18} color={hasLights ? colors.lime : colors.muted} />
-                  <View style={{ flex: 1, gap: 1 }}>
-                    <Text numberOfLines={2} style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: hasLights ? colors.text : colors.textSoft }}>
-                      {lighting}
-                    </Text>
-                    {density?.ppfdApprox != null ? (
-                      <Muted numberOfLines={1}>≈ {density.ppfdApprox} µmol/m²/s · promedio estimado</Muted>
-                    ) : null}
-                  </View>
-                  <Ionicons name="chevron-forward" size={16} color={colors.muted} />
-                </Pressable>
               </View>
             </View>
           )}
-        </Rise>
-
-        <Rise delay={100}>
-          <Pressable onPress={() => router.push('/clima')} accessibilityRole="button" accessibilityLabel="Clima de la carpa">
-            <Card style={{ marginTop: 16, paddingVertical: 12, flexDirection: 'row' }}>
-              {climate ? (
-                <>
-                  <Stat value={`${fmt(climate.tempC)}°`} label="Temperatura" />
-                  <Stat value={`${Math.round(climate.rh)}%`} label="Humedad" />
-                  <Stat value={fmt(climate.vpd)} label={`VPD kPa · ${relDays(climate.date)}`} accent />
-                </>
-              ) : (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                  <Ionicons name="add-circle-outline" size={22} color={colors.lime} />
-                  <Body style={{ color: colors.textSoft }}>Cargá la primera lectura de temp y humedad</Body>
-                </View>
-              )}
-            </Card>
-          </Pressable>
         </Rise>
 
         {getStarted.visible ? (
@@ -470,13 +490,23 @@ export default function CarpaScreen() {
   );
 }
 
-function Stat({ value, label, accent }: { value: string; label: string; accent?: boolean }) {
-  return (
-    <View style={{ flex: 1, gap: 2 }}>
-      <Text style={{ fontFamily: fonts.displaySemi, fontSize: 20, color: accent ? colors.lime : colors.text }}>{value}</Text>
-      <Muted numberOfLines={1}>{label}</Muted>
-    </View>
-  );
+/** Pastillas de arriba de la carpa (clima, VPD e iluminación). */
+const pillStyle = {
+  height: 34,
+  flexDirection: 'row' as const,
+  alignItems: 'center' as const,
+  gap: 6,
+  paddingHorizontal: 10,
+  borderRadius: 12,
+  backgroundColor: colors.cardAlt,
+};
+
+/** Antigüedad de una lectura para lectores de pantalla: "medida hoy", "medida ayer", "hace 3 días". */
+function spokenAge(date: string): string {
+  const n = daysBetween(toYmd(parseDate(date)), today());
+  if (n <= 0) return 'medida hoy';
+  if (n === 1) return 'medida ayer';
+  return `hace ${n} días`;
 }
 
 function Dot({ color }: { color: string }) {
