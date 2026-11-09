@@ -21,19 +21,23 @@ Si la primera vez Expo te pregunta si querés instalar TypeScript, decile que s�
 
 ## Qué tiene esta versión (v0.1)
 
-- **Carpa 3D**: vista isométrica de la carpa con las macetas como cilindros, se mueve sola y la girás arrastrando. La foto de portada de cada planta aparece arriba de su maceta. Alternás con vista Lista.
+- **Carpa 3D**: vista isométrica de la carpa con plantas renderizadas según su fase y macetas vacías para plantar. Se mueve sola y la girás arrastrando. Alternás con vista Lista.
 - **Ficha de planta**: foto de portada con balanceo 3D, fase y días calculados solos, barra vege/flora, descripción, riegos, fotos con su descripción, genética (efectos y sabores) y cata.
 - **Registrar riego**: varias plantas a la vez, receta con cálculo de ml según litros, pH, EC y runoff opcional.
 - **Nueva foto**: cámara o galería, descripción, etiquetas (poda, LST, plaga…) y opción de usarla como portada.
 - **Clima**: temperatura y humedad con VPD calculado.
 - **Diario**: todo lo que pasó, agrupado por día.
-- **Biblioteca**: genéticas, fertilizantes (precargado el Nutripack de Namasté), recetas y aviso de riego cada N días.
+- **Biblioteca**: genéticas (flora en semanas con los días calculados solos, THC/CBD, efectos y sabores elegidos de una lista o agregados a mano), fertilizantes (el Nutripack de Namasté es un pack opcional), recetas y aviso de riego cada N días.
 
-Arranca con tu ciclo actual cargado: carpa 80×80×160, 6 macetas de 10 L en tierra, germinación 30/07 y flora desde 08/09. Las fechas se corrigen desde Editar planta.
+- **Onboarding**: la primera vez armás la carpa (medidas rápidas o personalizadas; sustrato Tierra, Coco, Turba y perlita, Living Soil u otro) y elegís arrancar de cero o cargar plantas que ya tenés. Después, la tarjeta "Primeros pasos" guía genética, plantado, primera lectura de clima, riego y foto. Si la app ya tiene datos guardados, no aparece.
+- **Plantar**: tocás una maceta vacía, elegís genética y fecha de germinación. Una planta descartada conserva su historial y libera la maceta.
+- **Ciclos**: cerrás el ciclo sin borrar nada, empezás otro con los valores del anterior y consultás los ciclos pasados.
 
 ## Dónde se guardan los datos
 
-Por ahora **en el celular** (AsyncStorage). Las fotos quedan referenciadas desde donde las toma el picker.
+Por ahora **en el celular** (AsyncStorage). Las fotos quedan referenciadas desde donde las toma el picker. En Biblioteca → Ajustes podés exportar una copia en JSON, sin las imágenes.
+
+Para probar sin tocar tus datos, levantá la app con otro espacio: `$env:EXPO_PUBLIC_STORE_KEY='weedly-test'; npx expo start --clear` en PowerShell.
 El próximo paso es sincronizar con **Supabase** (base + fotos en Storage) para tener backup y poder usarla en otro dispositivo.
 
 ## Estructura
@@ -42,6 +46,9 @@ El próximo paso es sincronizar con **Supabase** (base + fotos en Storage) para 
 app/                 pantallas (expo-router)
   (tabs)/            Carpa, Diario, Biblioteca
   planta/[id].tsx    ficha de planta
+  onboarding.tsx     armar la carpa la primera vez
+  plantar/[potId]    plantar en una maceta vacía (modal)
+  ciclo/             cerrar, empezar e historial de ciclos
   riego.tsx          registrar riego (modal)
   foto.tsx           nueva foto + descripción (modal)
   clima.tsx          lectura de clima (modal)

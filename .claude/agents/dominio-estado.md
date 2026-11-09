@@ -10,7 +10,7 @@ Sos el especialista en dominio y estado de Weedly, una app mobile de seguimiento
 - `src/types.ts`: tipos del dominio (Tent, Cycle, Pot, Plant, PhaseChange, Genetic, Fertilizer, Recipe, Watering, ClimateReading, Photo, Tasting, Settings, Phase).
 - `src/store.ts`: estado (`Data`) y acciones (`Actions`), persistencia.
 - `src/selectors.ts`: cálculos derivados (fase actual, días, riego pendiente, portada).
-- `src/seed.ts`: datos iniciales (carpa 80×80×160, 6 macetas de 10 L, germinación 30/07, flora 08/09, Nutripack de Namasté).
+- `src/seed.ts`: el pack opcional de Namasté. El estado inicial está vacío y lo arma el onboarding.
 - `src/utils.ts`: helpers (`uid`, fechas, etc.).
 
 Sos dueño de `types.ts`: si otro agente necesita un campo nuevo, lo agregás vos.

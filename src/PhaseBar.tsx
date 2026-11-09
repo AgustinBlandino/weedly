@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import type { PlantSummary } from './selectors';
 import { colors } from './theme';
 import { Muted } from './ui';
+import { fmtWeeks } from './utils';
 
 export function PhaseBar({ s }: { s: PlantSummary }) {
   const remaining = s.floraRemaining ?? 0;
@@ -19,9 +20,11 @@ export function PhaseBar({ s }: { s: PlantSummary }) {
         <Muted>Vege {s.vegeDays} d</Muted>
         <Muted>Flora {s.floraDays} d</Muted>
         <Muted>
-          {s.floraTarget
-            ? `Faltan ~${remaining} d (breeder: ${s.floraTarget} d)`
-            : `Día ${s.dayOfLife} desde germinación`}
+          {s.ended
+            ? `${s.dayOfLife} d de vida`
+            : s.floraTarget
+              ? `Faltan ~${remaining} d (breeder: ${fmtWeeks(s.floraTarget)})`
+              : `Día ${s.dayOfLife} desde germinación`}
         </Muted>
       </View>
     </View>

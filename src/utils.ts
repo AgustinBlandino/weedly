@@ -44,6 +44,10 @@ export function fmtDate(s: string): string {
   return `${d.getDate()} ${MONTHS[d.getMonth()]}`;
 }
 
+export function fmtDateYear(s: string): string {
+  return `${fmtDate(s)} ${parseDate(s).getFullYear()}`;
+}
+
 export function fmtDateTime(s: string): string {
   const d = parseDate(s);
   const hh = String(d.getHours()).padStart(2, '0');
@@ -64,6 +68,11 @@ export function fmt(n: number, dec = 1): string {
   return (Math.round(n * f) / f).toString().replace('.', ',');
 }
 
+/** Días de flora en semanas: 63 → "9 sem", 60 → "8,6 sem". */
+export function fmtWeeks(days: number): string {
+  return `${fmt(days / 7)} sem`;
+}
+
 /** Parsea "6,4" o "6.4" */
 export function parseNum(s: string): number | undefined {
   const t = s.trim().replace(',', '.');
@@ -72,15 +81,13 @@ export function parseNum(s: string): number | undefined {
   return isNaN(n) ? undefined : n;
 }
 
+/** Nombre de una luminaria: "Marca Modelo", o solo la marca si no hay modelo. */
+export function lightLabel(l: { brand: string; model: string }): string {
+  return [l.brand.trim(), l.model.trim()].filter(Boolean).join(' ');
+}
+
 /** VPD del aire en kPa (sin offset de temperatura de hoja) */
 export function vpd(tempC: number, rh: number): number {
   const svp = 0.6108 * Math.exp((17.27 * tempC) / (tempC + 237.3));
   return svp * (1 - rh / 100);
-}
-
-export function splitList(s: string): string[] {
-  return s
-    .split(',')
-    .map((x) => x.trim())
-    .filter(Boolean);
 }

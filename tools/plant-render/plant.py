@@ -1,5 +1,5 @@
 # Genera una planta procedural y la renderiza girando, con fondo transparente.
-# Uso: blender -b -P plant.py -- --out DIR [--frames 48] [--res 480] [--samples 48] [--only 0] [--seed 7]
+# Uso: blender -b -P plant.py -- --out DIR [--stage flora] [--frames 48] [--res 480] [--samples 48] [--only 0] [--seed 7]
 import argparse, math, random, sys, os
 import bpy, bmesh
 from mathutils import Vector, Matrix, Quaternion
@@ -12,6 +12,7 @@ ap.add_argument('--res', type=int, default=480)
 ap.add_argument('--samples', type=int, default=48)
 ap.add_argument('--only', type=int, default=-1)
 ap.add_argument('--seed', type=int, default=7)
+ap.add_argument('--stage', choices=['flora', 'vege', 'germinacion', 'maceta'], default='flora')
 args = ap.parse_args(argv)
 rng = random.Random(args.seed)
 
@@ -242,6 +243,80 @@ def build_plant(parent, mats):
     stems.build('stems', mats['stem'], parent)
     buds.build('buds', mats['bud'], parent)
     pistils.build('pistils', mats['pistil'], parent)
+
+
+def build_vege(parent, mats):
+    """Planta joven y frondosa: mismas hojas que la de flora, sin cogollos y a media altura."""
+    leaves = MeshBuilder('u', 'v', 'tint')
+    stems = MeshBuilder('tint')
+
+    soil_z = 0.205
+    height = 0.4
+    bend = Vector((rng.uniform(-.012, .012), rng.uniform(-.012, .012), 0))
+    stem_pts = [Vector((0, 0, soil_z + height * i / 14)) + bend * (i / 14) ** 2 for i in range(15)]
+    tube(stems, stem_pts, [0.0085 - 0.005 * i / 14 for i in range(15)], sides=10, tint=0.4)
+
+    nodes = 6
+    az = rng.uniform(0, 6.28)
+    for n in range(nodes):
+        f = n / (nodes - 1)
+        s = stem_pts[int(2 + f * 11)]
+        az += math.radians(90 + rng.uniform(-14, 14))
+        for side in (0, math.pi):
+            a = az + side + rng.uniform(-.25, .25)
+            out = Vector((math.cos(a), math.sin(a), 0))
+            blen = (0.17 - 0.1 * f) * rng.uniform(0.85, 1.12)
+            c1 = s + out * blen * 0.55 + WORLD_UP * blen * 0.1
+            tip = s + out * blen + WORLD_UP * blen * 0.55
+            pts = [bezier(s, c1, tip, i / 5) for i in range(6)]
+            tube(stems, pts, [0.0042 - 0.0026 * i / 5 for i in range(6)], sides=6, tint=0.5)
+            for k, t in enumerate((0.45, 0.95)):
+                p = bezier(s, c1, tip, t)
+                for sgn in (-1, 1):
+                    ang = a + sgn * rng.uniform(0.45, 1.1)
+                    d = Vector((math.cos(ang), math.sin(ang), rng.uniform(0.0, 0.4)))
+                    size = (0.22 - 0.09 * f) * (1 - 0.15 * k) * rng.uniform(0.85, 1.1)
+                    fan(leaves, stems, p, d, WORLD_UP, size, 0.2 + 0.25 * rng.random())
+
+    # Brote de punta.
+    top = stem_pts[-1]
+    for i in range(5):
+        a = az + i * 2.4
+        d = Vector((math.cos(a), math.sin(a), rng.uniform(0.35, 0.8)))
+        fan(leaves, stems, top, d, WORLD_UP, rng.uniform(0.07, 0.115), rng.uniform(0.3, 0.5))
+
+    leaves.build('leaves', mats['leaf'], parent)
+    stems.build('stems', mats['stem'], parent)
+
+
+def build_seedling(parent, mats):
+    """Plántula: cotiledones redondeados y el primer par de hojas verdaderas."""
+    leaves = MeshBuilder('u', 'v', 'tint')
+    stems = MeshBuilder('tint')
+
+    soil_z = 0.205
+    height = 0.115
+    stem_pts = [Vector((0, 0, soil_z + height * i / 8)) for i in range(9)]
+    tube(stems, stem_pts, [0.0038 - 0.0014 * i / 8 for i in range(9)], sides=8, tint=0.7)
+
+    az = rng.uniform(0, 6.28)
+    cotyledon_at = stem_pts[5]
+    for side in (0, math.pi):
+        d = Vector((math.cos(az + side), math.sin(az + side), 0.3)).normalized()
+        leaflet(leaves, cotyledon_at, d, WORLD_UP, 0.055, 0.021, 0.12, 0.85, teeth=1)
+
+    top = stem_pts[-1]
+    for side in (0, math.pi):
+        a = az + math.pi / 2 + side
+        d = Vector((math.cos(a), math.sin(a), 0.35))
+        fan(leaves, stems, top, d, WORLD_UP, 0.1, 0.6)
+    # Las siguientes hojas asomando en el centro.
+    for side in (0, math.pi):
+        d = Vector((math.cos(az + side), math.sin(az + side), 0.9))
+        fan(leaves, stems, top, d, WORLD_UP, 0.05, 0.8)
+
+    leaves.build('leaves', mats['leaf'], parent)
+    stems.build('stems', mats['stem'], parent)
 
 
 def lathe(profile, sides, name, mat, parent):
@@ -505,7 +580,12 @@ def setup_scene():
 sc, rig = setup_scene()
 mats = materials()
 build_pot(rig, mats)
-build_plant(rig, mats)
+if args.stage == 'flora':
+    build_plant(rig, mats)
+elif args.stage == 'vege':
+    build_vege(rig, mats)
+elif args.stage == 'germinacion':
+    build_seedling(rig, mats)
 args.out = os.path.abspath(args.out)
 os.makedirs(args.out, exist_ok=True)
 

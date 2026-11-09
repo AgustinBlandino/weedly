@@ -1,21 +1,35 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
-import { useStore } from '@/store';
-import { colors, fonts } from '@/theme';
-import { Card, Chip, Empty, Field, Muted, Rise, Screen, Title } from '@/ui';
-import { fmt, parseNum } from '@/utils';
+import { Alert, Pressable, Share, Text, View } from 'react-native';
+import { namastePack } from '@/seed';
+import { exportDataJson, IS_TEST_STORE, STORE_KEY, useStore } from '@/store';
+import { colors, fonts, radius } from '@/theme';
+import { Body, Card, Chip, Empty, Field, H2, Muted, PrimaryButton, Rise, Screen, Title } from '@/ui';
+import { LIGHT_TYPE_LABEL } from '@/types';
+import { fmt, fmtWeeks, lightLabel, parseNum } from '@/utils';
 
-type Seg = 'geneticas' | 'fertilizantes' | 'recetas' | 'ajustes';
+type Seg = 'geneticas' | 'iluminacion' | 'fertilizantes' | 'recetas' | 'ajustes';
+
+// Cancelar el share resuelve la promesa con normalidad: solo un rechazo o una falla al armar el JSON es un error.
+async function exportCopy() {
+  try {
+    await Share.share({ message: exportDataJson() });
+  } catch {
+    Alert.alert('No pude exportar la copia', 'Tus datos siguen intactos. Probá de nuevo en un rato.');
+  }
+}
 
 export default function BibliotecaScreen() {
   const s = useStore();
   const [seg, setSeg] = useState<Seg>('geneticas');
   const [every, setEvery] = useState(String(s.settings.wateringEveryDays));
 
+  const missingFromPack = namastePack.filter((p) => !s.fertilizers.some((f) => f.id === p.id)).length;
+
   const addRoute: Record<Exclude<Seg, 'ajustes'>, string> = {
     geneticas: '/genetica/nueva',
+    iluminacion: '/luminaria/nueva',
     fertilizantes: '/fertilizante/nuevo',
     recetas: '/receta/nueva',
   };
@@ -38,6 +52,7 @@ export default function BibliotecaScreen() {
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 16 }}>
         <Chip label="Genéticas" active={seg === 'geneticas'} onPress={() => setSeg('geneticas')} />
+        <Chip label="Iluminación" active={seg === 'iluminacion'} onPress={() => setSeg('iluminacion')} />
         <Chip label="Fertilizantes" active={seg === 'fertilizantes'} onPress={() => setSeg('fertilizantes')} />
         <Chip label="Recetas" active={seg === 'recetas'} onPress={() => setSeg('recetas')} />
         <Chip label="Ajustes" active={seg === 'ajustes'} onPress={() => setSeg('ajustes')} />
@@ -50,26 +65,58 @@ export default function BibliotecaScreen() {
               <Row
                 key={g.id}
                 title={g.name}
-                subtitle={[g.breeder, g.type, g.floweringDays ? `${g.floweringDays} d flora` : ''].filter(Boolean).join(' · ')}
+                subtitle={[g.breeder, g.type, g.floweringDays ? `${fmtWeeks(g.floweringDays)} de flora` : ''].filter(Boolean).join(' · ')}
                 extra={[...g.effects, ...g.flavors].slice(0, 4).join(' · ')}
                 onPress={() => router.push(`/genetica/${g.id}`)}
               />
             ))
           ) : (
-            <Empty text="Cargá tus genéticas con lo que dice el banco: efectos, sabores y días de flora. Después se las asignás a cada planta." />
+            <Empty text="Cargá tus genéticas con lo que dice el banco: tipo, semanas de flora, efectos y sabores." />
           )
         ) : null}
 
-        {seg === 'fertilizantes'
-          ? s.fertilizers.map((f) => (
+        {seg === 'iluminacion' ? (
+          s.lights.length ? (
+            s.lights.map((l) => (
               <Row
-                key={f.id}
-                title={f.name}
-                subtitle={[f.brand, f.kind].filter(Boolean).join(' · ')}
-                onPress={() => router.push(`/fertilizante/${f.id}`)}
+                key={l.id}
+                title={lightLabel(l)}
+                subtitle={[LIGHT_TYPE_LABEL[l.type], `${fmt(l.watts)} W`, l.dimmable ? 'Regulable' : ''].filter(Boolean).join(' · ')}
+                extra={l.spectrum}
+                onPress={() => router.push(`/luminaria/${l.id}`)}
               />
             ))
-          : null}
+          ) : (
+            <Empty text="Cargá las luminarias que usás: tipo, potencia real y, si lo tenés, el PPF." />
+          )
+        ) : null}
+
+        {seg === 'fertilizantes' ? (
+          <>
+            {s.fertilizers.length ? (
+              s.fertilizers.map((f) => (
+                <Row
+                  key={f.id}
+                  title={f.name}
+                  subtitle={[f.brand, f.kind].filter(Boolean).join(' · ')}
+                  onPress={() => router.push(`/fertilizante/${f.id}`)}
+                />
+              ))
+            ) : (
+              <Empty text="Todavía no tenés fertilizantes. Sumá el pack Namasté o cargá los tuyos con el botón +." />
+            )}
+            {missingFromPack ? (
+              <>
+                <PrimaryButton label="Sumar pack Namasté" icon="add" onPress={s.addNamastePack} />
+                {s.fertilizers.length ? (
+                  <Muted>
+                    {missingFromPack === 1 ? 'Falta 1 producto del pack.' : `Faltan ${missingFromPack} productos del pack.`}
+                  </Muted>
+                ) : null}
+              </>
+            ) : null}
+          </>
+        ) : null}
 
         {seg === 'recetas' ? (
           s.recipes.length ? (
@@ -92,26 +139,51 @@ export default function BibliotecaScreen() {
         ) : null}
 
         {seg === 'ajustes' ? (
-          <Card style={{ gap: 10 }}>
-            <Field
-              label="Avisar riego cada cuántos días"
-              value={every}
-              onChangeText={(v) => {
-                setEvery(v);
-                const n = parseNum(v);
-                if (n != null && n >= 1 && n <= 30) s.updateSettings({ wateringEveryDays: Math.round(n) });
-              }}
-              keyboardType="numeric"
-            />
-            <Muted>Las macetas se marcan en ámbar cuando pasan estos días desde su último riego.</Muted>
-          </Card>
+          <>
+            <Card style={{ gap: 10 }}>
+              <Field
+                label="Avisar riego cada cuántos días"
+                value={every}
+                onChangeText={(v) => {
+                  setEvery(v);
+                  const n = parseNum(v);
+                  if (n != null && n >= 1 && n <= 30) s.updateSettings({ wateringEveryDays: Math.round(n) });
+                }}
+                keyboardType="numeric"
+              />
+              <Muted>Las macetas se marcan en ámbar cuando pasan estos días desde su último riego.</Muted>
+            </Card>
+
+            <Card style={{ gap: 10 }}>
+              <H2>Tus datos</H2>
+              {IS_TEST_STORE ? (
+                <View style={{ backgroundColor: colors.floraBg, borderRadius: radius.sm, padding: 12 }}>
+                  <Body style={{ color: colors.flora }}>Espacio de prueba: {STORE_KEY}</Body>
+                </View>
+              ) : null}
+              <PrimaryButton label="Exportar copia (JSON)" icon="share-outline" onPress={exportCopy} />
+              <Muted>La copia incluye tus registros, pero no las imágenes de las fotos.</Muted>
+            </Card>
+          </>
         ) : null}
       </Rise>
     </Screen>
   );
 }
 
-function Row({ title, subtitle, extra, onPress }: { title: string; subtitle?: string; extra?: string; onPress: () => void }) {
+function Row({
+  title,
+  subtitle,
+  extra,
+  trailing,
+  onPress,
+}: {
+  title: string;
+  subtitle?: string;
+  extra?: string;
+  trailing?: string;
+  onPress: () => void;
+}) {
   return (
     <Pressable
       onPress={onPress}
@@ -124,6 +196,7 @@ function Row({ title, subtitle, extra, onPress }: { title: string; subtitle?: st
           {subtitle ? <Muted>{subtitle}</Muted> : null}
           {extra ? <Muted style={{ color: colors.textSoft }}>{extra}</Muted> : null}
         </View>
+        {trailing ? <Muted style={{ color: colors.textSoft, maxWidth: 90, textAlign: 'right' }}>{trailing}</Muted> : null}
         <Ionicons name="chevron-forward" size={18} color={colors.muted} />
       </Card>
     </Pressable>

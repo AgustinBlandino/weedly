@@ -25,6 +25,39 @@ export interface Cycle {
   startDate: string; // YYYY-MM-DD
   endDate?: string;
   status: 'activo' | 'archivado';
+  /** Luminarias usadas en el ciclo. Opcional: los ciclos guardados antes no lo tienen. */
+  lights?: CycleLight[];
+}
+
+export type LightType = 'led' | 'hps' | 'mh' | 'cfl' | 'otro';
+
+export const LIGHT_TYPE_LABEL: Record<LightType, string> = {
+  led: 'LED',
+  hps: 'Sodio (HPS)',
+  mh: 'Halogenuro (MH)',
+  cfl: 'Bajo consumo (CFL)',
+  otro: 'Otro',
+};
+
+export interface Light {
+  id: string;
+  type: LightType;
+  brand: string;
+  model: string;
+  watts: number; // potencia real, no equivalente
+  dimmable?: boolean;
+  ppf?: number; // µmol/s
+  spectrum?: string; // texto libre
+  notes: string;
+}
+
+/** Copia de la luminaria en el ciclo: el historial sobrevive si se borra del catálogo. */
+export interface CycleLight {
+  lightId?: string; // se limpia si la luminaria se borra
+  label: string; // "Marca Modelo", o solo la marca
+  watts: number;
+  /** Opcional: las copias guardadas antes no lo tienen. */
+  type?: LightType;
 }
 
 export interface Pot {
@@ -45,6 +78,7 @@ export interface Plant {
   germinationDate: string;
   description: string;
   coverPhotoId?: string;
+  endedAt?: string; // YYYY-MM-DD; presente = descartada
 }
 
 export interface PhaseChange {
@@ -59,7 +93,7 @@ export interface Genetic {
   name: string;
   breeder: string;
   type: string; // ej: "Fem · Foto"
-  floweringDays?: number;
+  floweringDays?: number; // se carga en semanas, se guarda en días
   thc?: string;
   cbd?: string;
   effects: string[];
@@ -135,4 +169,5 @@ export interface Tasting {
 
 export interface Settings {
   wateringEveryDays: number;
+  firstStepsDismissed?: boolean;
 }

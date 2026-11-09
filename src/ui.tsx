@@ -1,8 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useRef } from 'react';
+import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
+  Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleProp,
@@ -14,8 +17,9 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts, radius } from './theme';
+import { fmtDateYear, isValidYmd, parseDate, toYmd } from './utils';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -65,9 +69,19 @@ export function Body({ children, style, numberOfLines }: { children: React.React
   );
 }
 
-export function Muted({ children, style, numberOfLines }: { children: React.ReactNode; style?: StyleProp<TextStyle>; numberOfLines?: number }) {
+export function Muted({
+  children,
+  style,
+  numberOfLines,
+  accessibilityRole,
+}: {
+  children: React.ReactNode;
+  style?: StyleProp<TextStyle>;
+  numberOfLines?: number;
+  accessibilityRole?: 'alert';
+}) {
   return (
-    <Text numberOfLines={numberOfLines} style={[{ fontFamily: fonts.body, fontSize: 12, color: colors.muted }, style]}>
+    <Text accessibilityRole={accessibilityRole} numberOfLines={numberOfLines} style={[{ fontFamily: fonts.body, fontSize: 12, color: colors.muted }, style]}>
       {children}
     </Text>
   );
@@ -209,6 +223,196 @@ export function Field({ label, style, ...props }: TextInputProps & { label: stri
   );
 }
 
+function atTime(ymd: string, hours: number, minutes = 0, seconds = 0): Date {
+  const d = parseDate(ymd);
+  d.setHours(hours, minutes, seconds, 0);
+  return d;
+}
+
+/** Selector de fecha. Trabaja con YYYY-MM-DD en hora local; `minDate` y `maxDate` son inclusivos. */
+export function DateField({
+  label,
+  value,
+  onChange,
+  minDate,
+  maxDate,
+  error,
+  style,
+}: {
+  label: string;
+  value: string;
+  onChange: (ymd: string) => void;
+  minDate?: string;
+  maxDate?: string;
+  error?: string;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const insets = useSafeAreaInsets();
+  const [draft, setDraft] = useState<string | null>(null);
+  const valid = isValidYmd(value);
+  // Al mediodía, para que un cambio de horario no mueva el día.
+  const current = atTime(valid ? value : toYmd(new Date()), 12);
+  const minimumDate = minDate ? atTime(minDate, 0) : undefined;
+  const maximumDate = maxDate ? atTime(maxDate, 23, 59, 59) : undefined;
+  const text = valid ? fmtDateYear(value) : 'Elegí una fecha';
+
+  const commit = (ymd: string) => {
+    let next = ymd;
+    if (minDate && next < minDate) next = minDate;
+    if (maxDate && next > maxDate) next = maxDate;
+    if (next !== value) onChange(next);
+  };
+
+  const open = () => {
+    if (Platform.OS === 'android') {
+      DateTimePickerAndroid.open({
+        value: current,
+        mode: 'date',
+        minimumDate,
+        maximumDate,
+        onValueChange: (_event, date) => commit(toYmd(date)),
+      });
+    } else {
+      setDraft(toYmd(current));
+    }
+  };
+
+  return (
+    <View style={[{ gap: 6 }, style]}>
+      <Muted style={{ fontSize: 13 }}>{label}</Muted>
+      <Pressable
+        onPress={open}
+        accessibilityRole="button"
+        accessibilityLabel={`${label}: ${text}`}
+        accessibilityHint="Abre el calendario"
+        style={({ pressed }) => ({
+          minHeight: 48,
+          borderRadius: 14,
+          borderWidth: 1,
+          borderColor: error ? colors.danger : colors.border,
+          backgroundColor: colors.cardAlt,
+          paddingHorizontal: 14,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 10,
+          transform: [{ scale: pressed ? 0.98 : 1 }],
+        })}
+      >
+        <Text style={{ fontFamily: fonts.body, fontSize: 15, color: valid ? colors.text : colors.muted }}>{text}</Text>
+        <Ionicons name="calendar-outline" size={18} color={colors.lime} />
+      </Pressable>
+      {error ? (
+        <Text accessibilityRole="alert" style={{ fontFamily: fonts.body, fontSize: 12, color: colors.danger }}>
+          {error}
+        </Text>
+      ) : null}
+
+      {Platform.OS !== 'android' ? (
+        <Modal visible={draft != null} transparent animationType="slide" onRequestClose={() => setDraft(null)}>
+          <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+            <Pressable
+              onPress={() => setDraft(null)}
+              accessibilityRole="button"
+              accessibilityLabel="Cancelar"
+              style={[StyleSheet.absoluteFill, { backgroundColor: colors.bgDeep, opacity: 0.7 }]}
+            />
+            <View
+              accessibilityViewIsModal
+              style={{
+                backgroundColor: colors.sheet,
+                borderTopLeftRadius: radius.lg,
+                borderTopRightRadius: radius.lg,
+                paddingHorizontal: 20,
+                paddingTop: 18,
+                paddingBottom: Math.max(insets.bottom, 16),
+                gap: 12,
+              }}
+            >
+              <H2>{label}</H2>
+              {draft != null && Platform.OS === 'web' ? (
+                // La librería del calendario no tiene versión web (dibuja null): se usa el input nativo del navegador.
+                React.createElement('input', {
+                  type: 'date',
+                  value: draft,
+                  min: minDate,
+                  max: maxDate,
+                  'aria-label': label,
+                  onChange: (e: { target: { value: string } }) => {
+                    if (isValidYmd(e.target.value)) setDraft(e.target.value);
+                  },
+                  style: {
+                    colorScheme: 'dark',
+                    minHeight: 48,
+                    borderRadius: 14,
+                    border: `1px solid ${colors.border}`,
+                    backgroundColor: colors.cardAlt,
+                    color: colors.text,
+                    padding: '0 14px',
+                    fontSize: 16,
+                    fontFamily: 'inherit',
+                  },
+                })
+              ) : draft != null ? (
+                <DateTimePicker
+                  value={atTime(draft, 12)}
+                  mode="date"
+                  display="inline"
+                  themeVariant="dark"
+                  accentColor={colors.lime}
+                  locale="es-AR"
+                  minimumDate={minimumDate}
+                  maximumDate={maximumDate}
+                  onValueChange={(_event, date) => setDraft(toYmd(date))}
+                />
+              ) : null}
+              <PrimaryButton
+                label="Listo"
+                onPress={() => {
+                  if (draft != null) commit(draft);
+                  setDraft(null);
+                }}
+              />
+            </View>
+          </View>
+        </Modal>
+      ) : null}
+    </View>
+  );
+}
+
+export function Stepper({
+  label,
+  unit,
+  value,
+  min,
+  max,
+  onChange,
+}: {
+  label: string;
+  unit: string;
+  value: number;
+  min: number;
+  max: number;
+  onChange: (n: number) => void;
+}) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text }}>{label}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <IconButton icon="remove" label={`Una ${unit} menos`} onPress={() => onChange(Math.max(min, value - 1))} />
+        <Text
+          accessibilityLiveRegion="polite"
+          style={{ fontFamily: fonts.displaySemi, fontSize: 26, color: colors.text, minWidth: 36, textAlign: 'center' }}
+        >
+          {value}
+        </Text>
+        <IconButton icon="add" label={`Una ${unit} más`} onPress={() => onChange(Math.min(max, value + 1))} />
+      </View>
+    </View>
+  );
+}
+
 export function Toggle({ value, onChange, label }: { value: boolean; onChange: (v: boolean) => void; label: string }) {
   const x = useRef(new Animated.Value(value ? 1 : 0)).current;
   useEffect(() => {
@@ -275,6 +479,19 @@ export function SectionHeader({ title, action, onAction }: { title: string; acti
           <Text style={{ color: colors.lime, fontFamily: fonts.bodySemi, fontSize: 13 }}>{action}</Text>
         </Pressable>
       ) : null}
+    </View>
+  );
+}
+
+/** Gotita con nivel: el relleno se recorta desde abajo según `fraction` (1 llena, 0 vacía). */
+export function WaterDrop({ fraction, color, size = 18 }: { fraction: number; color: string; size?: number }) {
+  const level = Math.round(size * Math.min(1, Math.max(0, fraction)));
+  return (
+    <View style={{ width: size, height: size }}>
+      <Ionicons name="water-outline" size={size} color={color} />
+      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: level, overflow: 'hidden' }}>
+        <Ionicons name="water" size={size} color={color} style={{ position: 'absolute', left: 0, bottom: 0 }} />
+      </View>
     </View>
   );
 }

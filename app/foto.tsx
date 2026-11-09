@@ -8,15 +8,17 @@ import { useStore } from '@/store';
 import { colors, fonts, radius } from '@/theme';
 import { TiltPhoto } from '@/TiltPhoto';
 import { PHASE_LABEL } from '@/types';
-import { Chip, Field, IconButton, Muted, PrimaryButton, Rise, Screen, Title, Toggle } from '@/ui';
+import { Chip, Empty, Field, IconButton, Muted, PrimaryButton, Rise, Screen, Title, Toggle } from '@/ui';
 import { fmtDate, today } from '@/utils';
 
 const TAGS = ['Nota', 'Poda', 'LST', 'SCROG', 'Defoliación', 'Plaga', 'Cosecha'];
 
 export default function FotoScreen() {
-  const { plantId: initial } = useLocalSearchParams<{ plantId?: string }>();
+  const { plantId: param } = useLocalSearchParams<{ plantId?: string }>();
   const s = useStore();
   const list = activePlants(s);
+  // Una planta descartada no se ofrece: solo vale si sigue activa.
+  const initial = list.some((x) => x.plant.id === param) ? param : undefined;
   const [plantId, setPlantId] = useState<string | undefined>(initial ?? list[0]?.plant.id);
   const [uri, setUri] = useState<string | undefined>();
   const [description, setDescription] = useState('');
@@ -48,6 +50,20 @@ export default function FotoScreen() {
     );
     router.back();
   };
+
+  if (!list.length) {
+    return (
+      <Screen>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Title size={28}>Nueva foto</Title>
+          <IconButton icon="close" label="Cerrar" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
+        </View>
+        <Rise delay={40} style={{ marginTop: 18 }}>
+          <Empty text="Todavía no hay plantas para fotografiar. Cuando tengas una planta en la carpa, vas a poder guardar sus fotos desde acá." />
+        </Rise>
+      </Screen>
+    );
+  }
 
   return (
     <Screen

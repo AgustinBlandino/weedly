@@ -1,9 +1,9 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, Text, TextInput, View } from 'react-native';
 import { useStore } from '@/store';
 import { colors, fonts } from '@/theme';
-import { Field, IconButton, Muted, PrimaryButton, Screen, Title } from '@/ui';
+import { Empty, Field, IconButton, Muted, PrimaryButton, Screen, Title } from '@/ui';
 import { parseNum } from '@/utils';
 
 export default function RecetaScreen() {
@@ -46,7 +46,7 @@ export default function RecetaScreen() {
       footer={
         <>
           {existing ? <IconButton icon="trash-outline" label="Borrar receta" size={56} onPress={remove} /> : null}
-          <PrimaryButton label="Guardar receta" onPress={save} style={{ flex: 1 }} />
+          <PrimaryButton label="Guardar receta" disabled={!existing && !s.fertilizers.length} onPress={save} style={{ flex: 1 }} />
         </>
       }
     >
@@ -55,9 +55,24 @@ export default function RecetaScreen() {
         <IconButton icon="close" label="Cerrar" onPress={() => router.back()} />
       </View>
       <Field label="Nombre" value={name} onChangeText={setName} placeholder="Flora · semanas 7–9" style={{ marginTop: 18 }} />
-      <Muted style={{ marginTop: 18, marginBottom: 4, fontSize: 13 }}>
-        Dosis en ml por litro (dejá vacío lo que no uses). Usá la dosis de la etiqueta.
-      </Muted>
+      {s.fertilizers.length ? (
+        <Muted style={{ marginTop: 18, marginBottom: 4, fontSize: 13 }}>
+          Dosis en ml por litro (dejá vacío lo que no uses). Usá la dosis de la etiqueta.
+        </Muted>
+      ) : (
+        <View style={{ marginTop: 18, gap: 12 }}>
+          <Empty text="Para armar una receta necesitás fertilizantes. Sumá el pack Namasté o cargá los tuyos." />
+          <PrimaryButton label="Sumar pack Namasté" icon="add" onPress={s.addNamastePack} />
+          <Pressable
+            onPress={() => router.push('/fertilizante/nuevo')}
+            accessibilityRole="button"
+            hitSlop={12}
+            style={{ alignSelf: 'center' }}
+          >
+            <Text style={{ color: colors.lime, fontFamily: fonts.bodySemi, fontSize: 13 }}>Cargar uno propio</Text>
+          </Pressable>
+        </View>
+      )}
       {s.fertilizers.map((f) => (
         <View
           key={f.id}
