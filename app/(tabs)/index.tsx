@@ -22,13 +22,14 @@ import {
   lightDensity,
   needsWater,
   summarize,
-  tentHeadline,
+  tentHeadlineParts,
+  wateringStatus,
 } from '@/selectors';
 import { useStore } from '@/store';
 import { Tent3D } from '@/Tent3D';
 import { colors, fonts, radius } from '@/theme';
 import { PHASE_LABEL } from '@/types';
-import { Body, Card, Empty, H2, IconButton, Muted, PrimaryButton, Rise, SectionHeader, Title } from '@/ui';
+import { Body, Card, Empty, H2, IconButton, Muted, PrimaryButton, Rise, SectionHeader, WaterDrop } from '@/ui';
 import { daysBetween, fmt, parseDate, relDays, toYmd, today } from '@/utils';
 
 export default function CarpaScreen() {
@@ -92,53 +93,32 @@ export default function CarpaScreen() {
     foto: () => router.push('/foto'),
   };
 
-  const status = thirsty.length
-    ? `${thirsty.map((x) => x.plant.name).join(', ')} toca regar`
-    : !list.length
-      ? empties.length
-        ? 'Tocá una maceta vacía para plantar'
-        : 'Todavía no hay plantas en la carpa'
-      : list.some((x) => lastWatering(s, x.plant.id))
-        ? 'Riegos al día'
-        : 'Todavía no cargaste riegos';
+  const headline = cycle ? tentHeadlineParts(s) : { title: 'Sin ciclo activo', subtitle: undefined };
+  const water = wateringStatus(s);
+  const waterColor = !water ? colors.muted : water.overdue ? colors.flora : colors.lime;
+  const waterAgo = water ? (water.daysSince === 0 ? 'hoy' : water.daysSince === 1 ? 'ayer' : `hace ${water.daysSince} días`) : '';
+  const waterNext = !water
+    ? ''
+    : water.overdue
+      ? 'Toca regar'
+      : water.remaining === 1
+        ? 'mañana'
+        : `en ${water.remaining} días`;
+  const waterLabel = water
+    ? `Último riego${list.length > 1 ? ` de ${water.plantName}` : ''} ${waterAgo}. ${
+        water.overdue ? `Toca regar${thirsty.length > 1 ? `: ${thirsty.map((x) => x.plant.name).join(', ')}` : ''}` : `Próximo riego ${waterNext}`
+      }`
+    : 'Todavía no cargaste riegos';
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 120 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-          <Title size={24} style={{ flex: 1 }}>
-            {cycle ? tentHeadline(s) : 'Sin ciclo activo'}
-          </Title>
-          {tent && cycle ? (
-            <View style={{ flexShrink: 0, flexDirection: 'row', backgroundColor: colors.cardAlt, borderRadius: 12, padding: 3 }}>
-              {(['3d', 'lista'] as const).map((v) => (
-                <Pressable
-                  key={v}
-                  onPress={() => setView(v)}
-                  accessibilityRole="button"
-                  accessibilityLabel={v === '3d' ? 'Vista 3D' : 'Vista en lista'}
-                  accessibilityState={{ selected: view === v }}
-                  hitSlop={8}
-                  style={{
-                    height: 28,
-                    paddingHorizontal: 12,
-                    borderRadius: 10,
-                    justifyContent: 'center',
-                    backgroundColor: view === v ? colors.lime : 'transparent',
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontFamily: view === v ? fonts.bodySemi : fonts.body,
-                      fontSize: 12,
-                      color: view === v ? colors.bg : colors.textSoft,
-                    }}
-                  >
-                    {v === '3d' ? '3D' : 'Lista'}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
+        <View accessible accessibilityRole="header">
+          <Text style={{ fontFamily: fonts.display, fontSize: 28, lineHeight: 34, color: colors.text, letterSpacing: -0.5 }}>{headline.title}</Text>
+          {headline.subtitle ? (
+            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: colors.lime, fontVariant: ['tabular-nums'], marginTop: 2 }}>
+              {headline.subtitle}
+            </Text>
           ) : null}
         </View>
 
@@ -174,7 +154,7 @@ export default function CarpaScreen() {
               ) : null}
             </Card>
           ) : (
-            <View style={{ marginHorizontal: -20, marginTop: 4 }}>
+            <View style={{ marginHorizontal: -20, marginTop: 12 }}>
               {/* Pastillas: clima, VPD e iluminación. Si no entran, se achica primero la de iluminación. */}
               <View style={{ marginHorizontal: 20, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Pressable
@@ -237,6 +217,42 @@ export default function CarpaScreen() {
                 </Pressable>
               </View>
 
+              <View>
+                {/* Selector 3D / Lista: flota arriba a la derecha, sobre el dibujo. */}
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: 10,
+                    right: 20,
+                    zIndex: 2,
+                    flexDirection: 'row',
+                    backgroundColor: colors.cardAlt,
+                    borderRadius: 12,
+                    padding: 3,
+                  }}
+                >
+                  {(['3d', 'lista'] as const).map((v) => (
+                    <Pressable
+                      key={v}
+                      onPress={() => setView(v)}
+                      accessibilityRole="button"
+                      accessibilityLabel={v === '3d' ? 'Vista 3D' : 'Vista en lista'}
+                      accessibilityState={{ selected: view === v }}
+                      hitSlop={6}
+                      style={{
+                        width: 36,
+                        height: 30,
+                        borderRadius: 10,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: view === v ? colors.lime : 'transparent',
+                      }}
+                    >
+                      <Ionicons name={v === '3d' ? 'cube-outline' : 'list'} size={17} color={view === v ? colors.bg : colors.textSoft} />
+                    </Pressable>
+                  ))}
+                </View>
+
               {view === '3d' ? (
                 <Tent3D
                   items={items}
@@ -251,7 +267,7 @@ export default function CarpaScreen() {
                   onPressPlant={(id) => router.push(`/planta/${id}`)}
                 />
               ) : (
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, paddingHorizontal: 20, paddingVertical: 14 }}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, paddingHorizontal: 20, paddingTop: 54, paddingBottom: 14 }}>
                   {list.map(({ plant, pot }) => {
                     const sum = summarize(s, plant);
                     const lw = lastWatering(s, plant.id);
@@ -330,9 +346,49 @@ export default function CarpaScreen() {
                   ))}
                 </View>
               )}
+              </View>
 
               <View style={{ paddingHorizontal: 20, gap: 10 }}>
-                <Muted style={{ color: thirsty.length ? colors.flora : colors.muted }}>{status}</Muted>
+                {!list.length ? (
+                  <Muted>{empties.length ? 'Tocá una maceta vacía para plantar' : 'Todavía no hay plantas en la carpa'}</Muted>
+                ) : (
+                  <Pressable
+                    onPress={() => router.push('/riego')}
+                    accessibilityRole="button"
+                    accessibilityLabel={waterLabel}
+                    accessibilityHint="Abre Registrar riego"
+                    hitSlop={5}
+                    style={({ pressed }) => [
+                      pillStyle,
+                      {
+                        alignSelf: 'stretch',
+                        gap: 8,
+                        borderWidth: 1,
+                        borderColor: water?.overdue ? colors.flora : colors.cardAlt,
+                        transform: [{ scale: pressed ? 0.98 : 1 }],
+                      },
+                    ]}
+                  >
+                    <WaterDrop fraction={water?.fraction ?? 0} color={waterColor} />
+                    <Text numberOfLines={1} style={{ flex: 1, fontFamily: fonts.bodySemi, fontSize: 12, color: water ? colors.text : colors.textSoft }}>
+                      {water ? `Último riego: ${waterAgo}` : 'Todavía no cargaste riegos'}
+                    </Text>
+                    {water ? (
+                      <Text
+                        numberOfLines={1}
+                        style={{
+                          flexShrink: 0,
+                          fontFamily: water.overdue ? fonts.bodySemi : fonts.body,
+                          fontSize: 12,
+                          fontVariant: ['tabular-nums'],
+                          color: water.overdue ? colors.flora : colors.muted,
+                        }}
+                      >
+                        {waterNext}
+                      </Text>
+                    ) : null}
+                  </Pressable>
+                )}
                 {genetics.length ? (
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                     {genetics.map((g) => (

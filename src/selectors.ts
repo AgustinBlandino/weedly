@@ -136,19 +136,58 @@ export function activeGenetics(s: Store): { id: string; name: string; color: str
   });
 }
 
-export function tentHeadline(s: Store): string {
+/** Título de la carpa: la fase arriba y "Día X" abajo si todas van juntas; si no, cuántas hay en cada fase. */
+export function tentHeadlineParts(s: Store): { title: string; subtitle?: string } {
   const summaries = activePlants(s).map(({ plant }) => summarize(s, plant));
   const first = summaries[0];
-  if (!first) return 'Sin plantas';
+  if (!first) return { title: 'Sin plantas' };
 
   const counts = new Map<Phase, number>();
   summaries.forEach(({ phase }) => counts.set(phase, (counts.get(phase) ?? 0) + 1));
-  if (counts.size === 1) return `${PHASE_LABEL[first.phase]} · día ${first.dayInPhase}`;
+  if (counts.size === 1) return { title: PHASE_LABEL[first.phase], subtitle: `Día ${first.dayInPhase}` };
 
-  return [...counts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .map(([phase, count]) => `${count} en ${PHASE_LABEL[phase].toLowerCase()}`)
-    .join(' · ');
+  return {
+    title: [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([phase, count]) => `${count} en ${PHASE_LABEL[phase].toLowerCase()}`)
+      .join(' · '),
+  };
+}
+
+export interface WateringStatus {
+  plantName: string;
+  date: string;
+  daysSince: number;
+  every: number;
+  /** Días hasta el próximo riego; 0 o menos si ya toca. */
+  remaining: number;
+  /** Cuánto le queda a la gotita, de 1 (recién regada) a 0 (toca regar). */
+  fraction: number;
+  overdue: boolean;
+}
+
+/** Riego de la planta activa más urgente (la del riego más viejo). Mismo criterio de días que needsWater. */
+export function wateringStatus(s: Store): WateringStatus | undefined {
+  const t = today();
+  const every = s.settings.wateringEveryDays;
+  let worst: WateringStatus | undefined;
+  activePlants(s).forEach(({ plant }) => {
+    const w = lastWatering(s, plant.id);
+    if (!w) return;
+    const daysSince = Math.max(0, daysBetween(toYmd(parseDate(w.date)), t));
+    if (worst && worst.daysSince >= daysSince) return;
+    const remaining = every - daysSince;
+    worst = {
+      plantName: plant.name,
+      date: w.date,
+      daysSince,
+      every,
+      remaining,
+      fraction: Math.min(1, Math.max(0, remaining / every)),
+      overdue: daysSince >= every,
+    };
+  });
+  return worst;
 }
 
 /** Fotos de las plantas del ciclo activo, también de las descartadas. Las de ciclos cerrados quedan en su historial. */

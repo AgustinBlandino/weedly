@@ -483,6 +483,19 @@ export function SectionHeader({ title, action, onAction }: { title: string; acti
   );
 }
 
+/** Gotita con nivel: el relleno se recorta desde abajo según `fraction` (1 llena, 0 vacía). */
+export function WaterDrop({ fraction, color, size = 18 }: { fraction: number; color: string; size?: number }) {
+  const level = Math.round(size * Math.min(1, Math.max(0, fraction)));
+  return (
+    <View style={{ width: size, height: size }}>
+      <Ionicons name="water-outline" size={size} color={color} />
+      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: level, overflow: 'hidden' }}>
+        <Ionicons name="water" size={size} color={color} style={{ position: 'absolute', left: 0, bottom: 0 }} />
+      </View>
+    </View>
+  );
+}
+
 export function Empty({ text }: { text: string }) {
   return (
     <View style={{ borderWidth: 1, borderStyle: 'dashed', borderColor: '#4A524A', borderRadius: radius.md, padding: 16 }}>
