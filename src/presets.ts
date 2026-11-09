@@ -2,6 +2,14 @@
 
 export const SUBSTRATE_PRESETS = ['Tierra', 'Coco', 'Turba y perlita', 'Living Soil'];
 
+export const SPECTRUM_PRESETS = [
+  'Full spectrum',
+  'Full spectrum + rojo profundo',
+  'Full spectrum + UV/IR',
+  'Cálido (2700–3000 K)',
+  'Frío (6500 K)',
+];
+
 export const EFFECT_OPTIONS = [
   'Relajante',
   'Eufórico',

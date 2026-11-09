@@ -12,11 +12,14 @@ import {
   activeTent,
   archivedCycles,
   coverOf,
+  cycleLightingHeadline,
+  cycleLights,
   emptyPots,
   firstSteps,
   geneticColor,
   lastWatering,
   latestClimate,
+  lightDensity,
   needsWater,
   summarize,
   tentHeadline,
@@ -41,6 +44,16 @@ export default function CarpaScreen() {
   const recentPhotos = activeCyclePhotos(s).slice(0, 8);
   const lastClosed = cycle ? undefined : archivedCycles(s)[0]?.cycle;
   const genetics = activeGenetics(s);
+  const lighting = cycle ? cycleLightingHeadline(s, cycle) : '';
+  const hasLights = !!cycle?.lights?.length;
+  const density = cycle ? lightDensity(s, cycle) : undefined;
+  // Luminaria del dibujo 3D: apagada si no hay ninguna; cálida si todas las de tipo conocido no son LED.
+  const cycleLightList = cycle ? cycleLights(s, cycle) : [];
+  const typedLights = cycleLightList.filter((l) => l.type);
+  const tentLighting = {
+    on: cycleLightList.length > 0,
+    warm: typedLights.length > 0 && typedLights.every((l) => l.type !== 'led'),
+  };
 
   const items = list.map(({ plant, pot }) => ({
     id: plant.id,
@@ -164,6 +177,7 @@ export default function CarpaScreen() {
                   depthCm={tent.depthCm}
                   heightCm={tent.heightCm}
                   height={420}
+                  lighting={tentLighting}
                   onPressPlant={(id) => router.push(`/planta/${id}`)}
                 />
               ) : (
@@ -278,6 +292,34 @@ export default function CarpaScreen() {
                     ))}
                   </View>
                 ) : null}
+                <Pressable
+                  onPress={() => router.push('/ciclo/iluminacion')}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Iluminación: ${lighting}${density?.ppfdApprox != null ? `, aproximadamente ${density.ppfdApprox} micromoles por metro cuadrado por segundo, promedio estimado` : ''}`}
+                  accessibilityHint="Abre la iluminación del ciclo"
+                  style={({ pressed }) => ({
+                    minHeight: 44,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 10,
+                    paddingHorizontal: 12,
+                    paddingVertical: 8,
+                    borderRadius: radius.sm,
+                    backgroundColor: colors.card,
+                    transform: [{ scale: pressed ? 0.98 : 1 }],
+                  })}
+                >
+                  <Ionicons name="bulb-outline" size={18} color={hasLights ? colors.lime : colors.muted} />
+                  <View style={{ flex: 1, gap: 1 }}>
+                    <Text numberOfLines={2} style={{ fontFamily: fonts.bodySemi, fontSize: 13, color: hasLights ? colors.text : colors.textSoft }}>
+                      {lighting}
+                    </Text>
+                    {density?.ppfdApprox != null ? (
+                      <Muted numberOfLines={1}>≈ {density.ppfdApprox} µmol/m²/s · promedio estimado</Muted>
+                    ) : null}
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={colors.muted} />
+                </Pressable>
               </View>
             </View>
           )}

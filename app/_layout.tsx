@@ -64,10 +64,12 @@ export default function RootLayout() {
           <Stack.Screen name="plantar/[potId]" options={{ presentation: 'modal' }} />
           <Stack.Screen name="ciclo/cerrar" options={{ presentation: 'modal' }} />
           <Stack.Screen name="ciclo/nuevo" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="ciclo/iluminacion" options={{ presentation: 'modal' }} />
           <Stack.Screen name="riego" options={{ presentation: 'modal' }} />
           <Stack.Screen name="foto" options={{ presentation: 'modal' }} />
           <Stack.Screen name="clima" options={{ presentation: 'modal' }} />
           <Stack.Screen name="genetica/[id]" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="luminaria/[id]" options={{ presentation: 'modal' }} />
           <Stack.Screen name="receta/[id]" options={{ presentation: 'modal' }} />
           <Stack.Screen name="fertilizante/[id]" options={{ presentation: 'modal' }} />
         </Stack.Protected>

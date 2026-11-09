@@ -8,6 +8,7 @@ import type {
   Cycle,
   Fertilizer,
   Genetic,
+  Light,
   Phase,
   PhaseChange,
   Photo,
@@ -19,7 +20,7 @@ import type {
   Tent,
   Watering,
 } from './types';
-import { uid } from './utils';
+import { lightLabel, uid } from './utils';
 
 const STORE_VERSION = 1;
 
@@ -34,6 +35,7 @@ interface Data {
   plants: Plant[];
   phases: PhaseChange[];
   genetics: Genetic[];
+  lights: Light[];
   fertilizers: Fertilizer[];
   recipes: Recipe[];
   waterings: Watering[];
@@ -85,6 +87,9 @@ interface Actions {
   deletePhase: (id: string) => void;
   upsertGenetic: (g: Genetic) => string;
   deleteGenetic: (id: string) => void;
+  upsertLight: (l: Light) => string;
+  deleteLight: (id: string) => void;
+  setCycleLights: (cycleId: string, lightIds: string[]) => void;
   upsertFertilizer: (f: Fertilizer) => string;
   deleteFertilizer: (id: string) => void;
   upsertRecipe: (r: Recipe) => string;
@@ -102,6 +107,9 @@ const initialData: Data = {
   plants: [],
   phases: [],
   genetics: [],
+  // Los datos guardados antes de Iluminación no traen `lights`: el merge de persist
+  // ({ ...inicial, ...guardado }) deja este [] sin tocar el resto.
+  lights: [],
   fertilizers: [],
   recipes: [],
   waterings: [],
@@ -226,6 +234,9 @@ export const useStore = create<Store>()(
         const tent = s.tents.find((t) => t.id === tentId);
         if (!tent) return '';
         const { cycle, pots } = buildCycle(tent, input);
+        // Hereda las luminarias del último ciclo de la carpa, con su copia.
+        const previous = s.cycles.filter((c) => c.tentId === tentId).pop();
+        if (previous?.lights?.length) cycle.lights = previous.lights.map((l) => ({ ...l }));
         set({ cycles: [...s.cycles, cycle], pots: [...s.pots, ...pots] });
         return cycle.id;
       },
@@ -319,6 +330,46 @@ export const useStore = create<Store>()(
           plants: s.plants.map((p) => (p.geneticId === id ? { ...p, geneticId: undefined } : p)),
         })),
 
+      upsertLight: (l) => {
+        const item = l.id ? l : { ...l, id: uid() };
+        const copy = { label: lightLabel(item), watts: item.watts, type: item.type };
+        set((s) => ({
+          lights: upsert(s.lights, item),
+          // La copia de los ciclos queda al día por si después se borra la luminaria.
+          cycles: s.cycles.map((c) =>
+            c.lights?.some((x) => x.lightId === item.id)
+              ? { ...c, lights: c.lights.map((x) => (x.lightId === item.id ? { ...x, ...copy } : x)) }
+              : c,
+          ),
+        }));
+        return item.id;
+      },
+      deleteLight: (id) =>
+        set((s) => ({
+          lights: s.lights.filter((l) => l.id !== id),
+          cycles: s.cycles.map((c) =>
+            c.lights?.some((x) => x.lightId === id)
+              ? { ...c, lights: c.lights.map((x) => (x.lightId === id ? { ...x, lightId: undefined } : x)) }
+              : c,
+          ),
+        })),
+      // Lo histórico se conserva: las copias de luminarias borradas (sin lightId) quedan siempre
+      // en el ciclo, y a continuación van las del catálogo seleccionadas.
+      setCycleLights: (cycleId, lightIds) => {
+        const s = get();
+        const cycle = s.cycles.find((c) => c.id === cycleId);
+        if (!cycle) return;
+        const deleted = (cycle.lights ?? [])
+          .filter((x) => !x.lightId || !s.lights.some((l) => l.id === x.lightId))
+          .map((x) => ({ ...x, lightId: undefined }));
+        const selected = [...new Set(lightIds)].flatMap((id) => {
+          const l = s.lights.find((x) => x.id === id);
+          return l ? [{ lightId: l.id, label: lightLabel(l), watts: l.watts, type: l.type }] : [];
+        });
+        const lights = [...deleted, ...selected];
+        set({ cycles: s.cycles.map((c) => (c.id === cycleId ? { ...c, lights } : c)) });
+      },
+
       upsertFertilizer: (f) => {
         const item = f.id ? f : { ...f, id: uid() };
         set((s) => ({ fertilizers: upsert(s.fertilizers, item) }));
@@ -368,6 +419,7 @@ export function exportDataJson(): string {
     plants: s.plants,
     phases: s.phases,
     genetics: s.genetics,
+    lights: s.lights,
     fertilizers: s.fertilizers,
     recipes: s.recipes,
     waterings: s.waterings,

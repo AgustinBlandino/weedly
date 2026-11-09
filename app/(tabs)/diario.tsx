@@ -6,6 +6,7 @@ import {
   activeCycle,
   coverOf,
   cycleEntries,
+  cycleLightingHeadline,
   cyclePlants,
   defaultDiaryCycleId,
   diaryCycles,
@@ -87,7 +88,7 @@ export default function DiarioScreen() {
             onPress={() => setOpen((o) => !o)}
             disabled={cycles.length < 2}
             accessibilityRole="button"
-            accessibilityLabel={`Ciclo: ${cycle.name}${isActive ? ', actual' : ''}${cycles.length > 1 ? '. Tocá para cambiar de ciclo' : ''}`}
+            accessibilityLabel={`Ciclo: ${cycle.name}${isActive ? ', actual' : `. Iluminación: ${cycleLightingHeadline(s, cycle)}`}${cycles.length > 1 ? '. Tocá para cambiar de ciclo' : ''}`}
             accessibilityState={{ expanded: cycles.length > 1 ? open : undefined, disabled: cycles.length < 2 }}
             style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.98 : 1 }] })}
           >
@@ -100,6 +101,12 @@ export default function DiarioScreen() {
                   {isActive ? <CurrentBadge /> : null}
                 </View>
                 <Muted>{cycleDates(cycle)}</Muted>
+                {!isActive ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                    <Ionicons name="bulb-outline" size={14} color={colors.muted} />
+                    <Muted style={{ flex: 1, color: colors.textSoft }}>Iluminación: {cycleLightingHeadline(s, cycle)}</Muted>
+                  </View>
+                ) : null}
               </View>
               {cycles.length > 1 ? (
                 <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={18} color={colors.muted} />

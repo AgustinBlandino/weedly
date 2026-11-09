@@ -43,8 +43,38 @@ interface Props {
   depthCm?: number;
   heightCm?: number;
   height?: number;
+  /** Estado de la luminaria. Sin dato se dibuja encendida, con el blanco cálido del LED. */
+  lighting?: { on: boolean; warm?: boolean };
   onPressPlant: (id: string) => void;
 }
+
+/** '#RRGGBB' del tema → 'rgba(r,g,b,a)' para halos y transparencias. */
+const alpha = (hex: string, a: number) => {
+  const n = parseInt(hex.slice(1, 7), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+};
+
+interface LampPalette {
+  diode: string;
+  bar: string;
+  frameBorder: string;
+}
+
+const LAMP_OFF: LampPalette = {
+  diode: colors.border,
+  bar: colors.card,
+  frameBorder: alpha(colors.text, 0.22),
+};
+const LAMP_LED: LampPalette = {
+  diode: colors.text,
+  bar: alpha(colors.lime, 0.2),
+  frameBorder: alpha(colors.lime, 0.55),
+};
+const LAMP_WARM: LampPalette = {
+  diode: colors.flora,
+  bar: alpha(colors.flora, 0.22),
+  frameBorder: alpha(colors.flora, 0.55),
+};
 
 // Proyección isométrica ortográfica: giro en Z (θ) y luego inclinación α.
 const ALPHA = (58 * Math.PI) / 180;
@@ -73,8 +103,11 @@ export function Tent3D({
   depthCm = REF_SIDE_CM,
   heightCm = REF_HEIGHT_CM,
   height = 340,
+  lighting,
   onPressPlant,
 }: Props) {
+  const lightOn = lighting?.on ?? true;
+  const lightWarm = lightOn && !!lighting?.warm;
   const [width, setWidth] = useState(340);
   const [theta, setTheta] = useState(45);
   const thetaRef = useRef(45);
@@ -150,6 +183,21 @@ export function Tent3D({
     return () => loop.stop();
   }, [bob, reduceMotion]);
 
+  // Pulso muy leve del brillo de la luminaria encendida
+  const glow = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    glow.setValue(1);
+    if (reduceMotion || !lightOn) return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(glow, { toValue: 0.72, duration: 2600, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(glow, { toValue: 1, duration: 2600, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [glow, reduceMotion, lightOn]);
+
   // La carpa crece poco con las medidas: alcanza para notar el cambio sin que se salga de la vista.
   const longSide = Math.max(widthCm, depthCm);
   const rawSize = FLOOR * clamp(Math.pow(longSide / REF_SIDE_CM, 0.35), 0.8, 1.15);
@@ -218,6 +266,89 @@ export function Tent3D({
     { rotateZ: `${theta}deg` },
   ];
 
+  /** Rectángulo en un plano horizontal a altura z, centrado en el eje de la carpa. */
+  const plane = (w: number, d: number, z: number) => ({
+    position: 'absolute' as const,
+    left: cx - w / 2,
+    top: cy - d / 2,
+    width: w,
+    height: d,
+    transform: planeTransform(z),
+  });
+
+  // Luminaria: placa colgada unos cm debajo del techo, escalada con el piso.
+  const lampW = floorW * 0.68;
+  const lampD = floorD * 0.68;
+  const hang = clamp(tentH * 0.08, 8, 16);
+  const lampZ = tentH - hang;
+  const lampPad = clamp(lampW * 0.05, 3, 8);
+  const palette = !lightOn ? LAMP_OFF : lightWarm ? LAMP_WARM : LAMP_LED;
+  const glowColor = lightWarm ? colors.flora : colors.lime;
+  const hangers = [
+    [-1, -1],
+    [1, -1],
+    [1, 1],
+    [-1, 1],
+  ].map(([sx, sy]) => project((sx * lampW * 0.9) / 2, (sy * lampD * 0.86) / 2, tentH));
+
+  // Barras, diodos y driver no dependen del giro: se arman una vez por tamaño y color.
+  const lampBody = useMemo(() => {
+    const nBars = clamp(Math.round(lampW / 30), 4, 6);
+    const pad = lampPad;
+    const innerW = lampW - pad * 2 - 2;
+    const barW = innerW / (nBars + (nBars - 1) * 0.9);
+    const barLen = lampD - pad * 2 - 2;
+    const nDiodes = clamp(Math.round(barLen / 15), 3, 6);
+    const d = clamp(barW * 0.4, 2, 4);
+    const drvW = clamp(floorW * 0.08, 8, 16);
+    const drvD = clamp(lampD * 0.3, 10, 24);
+    const gap = Math.max(3, floorW * 0.03);
+    return (
+      <>
+        {Array.from({ length: nBars }, (_, b) => (
+          <View
+            key={b}
+            style={{
+              width: barW,
+              borderRadius: 2,
+              backgroundColor: palette.bar,
+              alignItems: 'center',
+              justifyContent: 'space-evenly',
+            }}
+          >
+            {Array.from({ length: nDiodes }, (_, k) => (
+              <View key={k} style={{ width: d, height: d, borderRadius: d / 2, backgroundColor: palette.diode }} />
+            ))}
+          </View>
+        ))}
+        {/* Cable y driver al costado */}
+        <View
+          style={{
+            position: 'absolute',
+            left: lampW - 2,
+            top: lampD / 2 - 1.5,
+            width: gap + 1,
+            height: 1,
+            backgroundColor: alpha(colors.text, 0.3),
+          }}
+        />
+        <View
+          style={{
+            position: 'absolute',
+            left: lampW - 2 + gap,
+            top: lampD / 2 - 1 - drvD / 2,
+            width: drvW,
+            height: drvD,
+            borderRadius: 2,
+            backgroundColor: colors.bgDeep,
+            borderWidth: 1,
+            borderColor: alpha(colors.text, 0.25),
+          }}
+        />
+      </>
+    );
+  }, [lampW, lampD, lampPad, floorW, palette]);
+
   const onLayout = (e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width);
 
   return (
@@ -272,33 +403,94 @@ export function Tent3D({
           }}
         />
       ))}
-      {/* Marco superior y panel de luz */}
+      {/* Marco superior */}
       <View
+        pointerEvents="none"
         style={{
-          position: 'absolute',
-          left: cx - floorW / 2,
-          top: cy - floorD / 2,
-          width: floorW,
-          height: floorD,
+          ...plane(floorW, floorD, tentH),
           borderWidth: 1,
           borderColor: 'rgba(242,245,238,0.16)',
-          transform: planeTransform(tentH),
+        }}
+      />
+
+      {/* Luz encendida: mancha en el piso, cono insinuado y halo bajo la luminaria */}
+      {lightOn ? (
+        <Animated.View
+          pointerEvents="none"
+          style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, opacity: glow }}
+        >
+          <View
+            style={{
+              ...plane(floorW * 0.88, floorD * 0.88, 0),
+              borderRadius: Math.min(floorW, floorD) * 0.4,
+              backgroundColor: alpha(glowColor, 0.07),
+            }}
+          />
+          <View
+            style={{
+              ...plane(floorW * 0.8, floorD * 0.8, lampZ * 0.5),
+              borderRadius: Math.min(floorW, floorD) * 0.3,
+              backgroundColor: alpha(glowColor, 0.035),
+            }}
+          />
+          <View
+            style={{
+              ...plane(lampW * 1.26, lampD * 1.26, lampZ - 5),
+              borderRadius: Math.min(lampW, lampD) * 0.3,
+              backgroundColor: alpha(colors.text, 0.05),
+            }}
+          />
+          <View
+            style={{
+              ...plane(lampW * 1.1, lampD * 1.1, lampZ - 2),
+              borderRadius: Math.min(lampW, lampD) * 0.18,
+              backgroundColor: alpha(glowColor, 0.12),
+            }}
+          />
+        </Animated.View>
+      ) : null}
+
+      {/* Luminaria: canto (da espesor), placa con barras de diodos y driver al costado */}
+      <View
+        pointerEvents="none"
+        style={{
+          ...plane(lampW, lampD, lampZ - 2.5),
+          borderRadius: 4,
+          backgroundColor: colors.bgDeep,
+          borderWidth: 1,
+          borderColor: alpha(colors.text, 0.1),
         }}
       />
       <View
+        pointerEvents="none"
         style={{
-          position: 'absolute',
-          left: cx - floorW * 0.35,
-          top: cy - floorD * 0.35,
-          width: floorW * 0.7,
-          height: floorD * 0.7,
-          borderRadius: 8,
-          backgroundColor: 'rgba(184,224,122,0.08)',
+          ...plane(lampW, lampD, lampZ),
+          borderRadius: 4,
+          backgroundColor: colors.bg,
           borderWidth: 1,
-          borderColor: 'rgba(184,224,122,0.45)',
-          transform: planeTransform(tentH - 4),
+          borderColor: palette.frameBorder,
+          padding: lampPad,
+          flexDirection: 'row',
+          justifyContent: 'space-between',
         }}
-      />
+      >
+        {lampBody}
+      </View>
+      {/* Colgadores: del techo a las esquinas de la luminaria */}
+      {hangers.map((h, i) => (
+        <View
+          key={`hanger-${i}`}
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            left: h.sx - 0.5,
+            top: h.sy,
+            width: 1,
+            height: hang * SIN_A,
+            backgroundColor: alpha(colors.text, 0.3),
+          }}
+        />
+      ))}
 
       {/* Plantas y macetas vacías, de atrás hacia adelante */}
       {scene.map((entry, i) => {

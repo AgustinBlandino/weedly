@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Text, View } from 'react-native';
@@ -5,7 +6,7 @@ import { SUBSTRATE_PRESETS } from '@/presets';
 import { activeCycle, activeTent, newCycleDefaults } from '@/selectors';
 import { useStore } from '@/store';
 import { colors, fonts } from '@/theme';
-import { Chip, DateField, Empty, Field, IconButton, Muted, PrimaryButton, Rise, Screen, Stepper, Title } from '@/ui';
+import { Body, Chip, DateField, Empty, Field, IconButton, Muted, PrimaryButton, Rise, Screen, Stepper, Title } from '@/ui';
 import { fmt, fmtDateYear, parseNum, today } from '@/utils';
 
 const LITERS_MAX = 200;
@@ -54,6 +55,11 @@ export default function NuevoCicloScreen() {
   const minDate = defaults.minStartDate;
   const dateOk = startDate <= hoy && (!minDate || startDate >= minDate);
   const canStart = litersOk && substrateOk && dateOk;
+  const inheritedLighting = !defaults.lights.length
+    ? 'ninguna'
+    : defaults.lights.length === 1
+      ? `hereda ${defaults.lights[0].label} (${fmt(defaults.lights[0].watts)} W)`
+      : `hereda ${defaults.lights.length} luminarias (${fmt(defaults.lights.reduce((sum, l) => sum + l.watts, 0))} W)`;
 
   const confirm = () => {
     if (starting.current || !canStart) return;
@@ -131,6 +137,17 @@ export default function NuevoCicloScreen() {
               Contame qué sustrato usás.
             </Text>
           )}
+          <View
+            accessible
+            accessibilityLabel={`Iluminación: ${inheritedLighting}. Se cambia después desde la Carpa.`}
+            style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}
+          >
+            <Ionicons name="bulb-outline" size={18} color={defaults.lights.length ? colors.lime : colors.muted} />
+            <View style={{ flex: 1, gap: 2 }}>
+              <Body style={{ color: colors.textSoft }}>Iluminación: {inheritedLighting}</Body>
+              <Muted>Se cambia después desde la Carpa.</Muted>
+            </View>
+          </View>
         </Rise>
       </Screen>
     </KeyboardAvoidingView>

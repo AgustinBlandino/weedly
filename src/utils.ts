@@ -81,6 +81,11 @@ export function parseNum(s: string): number | undefined {
   return isNaN(n) ? undefined : n;
 }
 
+/** Nombre de una luminaria: "Marca Modelo", o solo la marca si no hay modelo. */
+export function lightLabel(l: { brand: string; model: string }): string {
+  return [l.brand.trim(), l.model.trim()].filter(Boolean).join(' ');
+}
+
 /** VPD del aire en kPa (sin offset de temperatura de hoja) */
 export function vpd(tempC: number, rh: number): number {
   const svp = 0.6108 * Math.exp((17.27 * tempC) / (tempC + 237.3));

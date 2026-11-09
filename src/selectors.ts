@@ -1,8 +1,8 @@
 import type { Store } from './store';
 import { colors, geneticPalette } from './theme';
-import { PHASE_LABEL } from './types';
-import type { Cycle, Phase, PhaseChange, Photo, Plant, Pot, Watering } from './types';
-import { daysBetween, fmt, fmtDate, today, toYmd, parseDate, vpd } from './utils';
+import { LIGHT_TYPE_LABEL, PHASE_LABEL } from './types';
+import type { Cycle, CycleLight, Light, LightType, Phase, PhaseChange, Photo, Plant, Pot, Watering } from './types';
+import { daysBetween, fmt, fmtDate, lightLabel, today, toYmd, parseDate, vpd } from './utils';
 
 export interface PlantSummary {
   phase: Phase;
@@ -265,6 +265,8 @@ export interface NewCycleDefaults {
   maxPots: number;
   /** Un ciclo no arranca antes de que haya cerrado el anterior. */
   minStartDate?: string;
+  /** Luminarias que hereda de startCycle (las del último ciclo de la carpa). */
+  lights: CycleLight[];
 }
 
 /** Valores iniciales de un ciclo nuevo, tomados del último ciclo de la carpa. */
@@ -281,7 +283,62 @@ export function newCycleDefaults(s: Store, tentId: string): NewCycleDefaults {
     substrate: pots[0]?.substrate ?? 'Tierra',
     maxPots,
     minStartDate: last?.endDate,
+    lights: last?.lights ?? [],
   };
+}
+
+export interface CycleLightInfo {
+  lightId?: string;
+  label: string;
+  watts: number;
+  type?: LightType;
+  ppf?: number;
+  /** Presente si la luminaria sigue en el catálogo. */
+  light?: Light;
+}
+
+/** Luminarias del ciclo: con los datos actuales del catálogo si existen, si no con la copia guardada. */
+export function cycleLights(s: Store, cycle: Cycle): CycleLightInfo[] {
+  return (cycle.lights ?? []).map((copy) => {
+    const light = copy.lightId ? s.lights.find((l) => l.id === copy.lightId) : undefined;
+    if (!light) return { lightId: copy.lightId, label: copy.label, watts: copy.watts, type: copy.type };
+    return { lightId: light.id, label: lightLabel(light), watts: light.watts, type: light.type, ppf: light.ppf, light };
+  });
+}
+
+/** Potencia total y por m² de la carpa del ciclo. PPFD aproximado solo si todas las luminarias tienen PPF. */
+export function lightDensity(
+  s: Store,
+  cycle: Cycle,
+): { totalWatts: number; wPerM2: number; ppfdApprox?: number } | undefined {
+  const lights = cycleLights(s, cycle);
+  if (!lights.length) return undefined;
+  const tent = s.tents.find((t) => t.id === cycle.tentId);
+  const area = tent ? (tent.widthCm * tent.depthCm) / 10000 : NaN;
+  if (!Number.isFinite(area) || area <= 0) return undefined;
+  const totalWatts = lights.reduce((sum, l) => sum + l.watts, 0);
+  const allPpf = lights.every((l) => l.ppf != null && Number.isFinite(l.ppf));
+  const ppf = lights.reduce((sum, l) => sum + (l.ppf ?? 0), 0);
+  return {
+    totalWatts,
+    wPerM2: Math.round(totalWatts / area),
+    ppfdApprox: allPpf ? Math.round(ppf / area) : undefined,
+  };
+}
+
+/** Resumen de iluminación para la Carpa: "LED Marca Modelo 240 W · 375 W/m²" o "2 luminarias · 480 W · 750 W/m²". */
+export function cycleLightingHeadline(s: Store, cycle: Cycle): string {
+  const lights = cycleLights(s, cycle);
+  if (!lights.length) return 'Sin iluminación asignada';
+  const density = lightDensity(s, cycle);
+  const perM2 = density ? `${density.wPerM2} W/m²` : '';
+  if (lights.length === 1) {
+    const [l] = lights;
+    const name = [l.type ? LIGHT_TYPE_LABEL[l.type] : '', l.label].filter(Boolean).join(' ');
+    return [`${name} ${fmt(l.watts)} W`.trim(), perM2].filter(Boolean).join(' · ');
+  }
+  const total = lights.reduce((sum, l) => sum + l.watts, 0);
+  return [`${lights.length} luminarias`, `${fmt(total)} W`, perM2].filter(Boolean).join(' · ');
 }
 
 export interface FirstStep {

@@ -6,9 +6,10 @@ import { namastePack } from '@/seed';
 import { exportDataJson, IS_TEST_STORE, STORE_KEY, useStore } from '@/store';
 import { colors, fonts, radius } from '@/theme';
 import { Body, Card, Chip, Empty, Field, H2, Muted, PrimaryButton, Rise, Screen, Title } from '@/ui';
-import { fmt, fmtWeeks, parseNum } from '@/utils';
+import { LIGHT_TYPE_LABEL } from '@/types';
+import { fmt, fmtWeeks, lightLabel, parseNum } from '@/utils';
 
-type Seg = 'geneticas' | 'fertilizantes' | 'recetas' | 'ajustes';
+type Seg = 'geneticas' | 'iluminacion' | 'fertilizantes' | 'recetas' | 'ajustes';
 
 // Cancelar el share resuelve la promesa con normalidad: solo un rechazo o una falla al armar el JSON es un error.
 async function exportCopy() {
@@ -28,6 +29,7 @@ export default function BibliotecaScreen() {
 
   const addRoute: Record<Exclude<Seg, 'ajustes'>, string> = {
     geneticas: '/genetica/nueva',
+    iluminacion: '/luminaria/nueva',
     fertilizantes: '/fertilizante/nuevo',
     recetas: '/receta/nueva',
   };
@@ -50,6 +52,7 @@ export default function BibliotecaScreen() {
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 16 }}>
         <Chip label="Genéticas" active={seg === 'geneticas'} onPress={() => setSeg('geneticas')} />
+        <Chip label="Iluminación" active={seg === 'iluminacion'} onPress={() => setSeg('iluminacion')} />
         <Chip label="Fertilizantes" active={seg === 'fertilizantes'} onPress={() => setSeg('fertilizantes')} />
         <Chip label="Recetas" active={seg === 'recetas'} onPress={() => setSeg('recetas')} />
         <Chip label="Ajustes" active={seg === 'ajustes'} onPress={() => setSeg('ajustes')} />
@@ -69,6 +72,22 @@ export default function BibliotecaScreen() {
             ))
           ) : (
             <Empty text="Cargá tus genéticas con lo que dice el banco: tipo, semanas de flora, efectos y sabores." />
+          )
+        ) : null}
+
+        {seg === 'iluminacion' ? (
+          s.lights.length ? (
+            s.lights.map((l) => (
+              <Row
+                key={l.id}
+                title={lightLabel(l)}
+                subtitle={[LIGHT_TYPE_LABEL[l.type], `${fmt(l.watts)} W`, l.dimmable ? 'Regulable' : ''].filter(Boolean).join(' · ')}
+                extra={l.spectrum}
+                onPress={() => router.push(`/luminaria/${l.id}`)}
+              />
+            ))
+          ) : (
+            <Empty text="Cargá las luminarias que usás: tipo, potencia real y, si lo tenés, el PPF." />
           )
         ) : null}
 
