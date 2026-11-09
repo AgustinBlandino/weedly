@@ -247,7 +247,7 @@ export const useStore = create<Store>()(
         if (!s.cycles.some((c) => c.id === pot.cycleId && c.status === 'activo')) return undefined;
         if (s.plants.some((p) => p.potId === potId && !p.endedAt)) return undefined;
         const genetic = geneticId ? s.genetics.find((g) => g.id === geneticId) : undefined;
-        if (geneticId && !((genetic?.seedsAvailable ?? 0) > 0)) return undefined;
+        if (geneticId && !genetic) return undefined;
 
         const plant: Plant = {
           id: uid(),
@@ -258,14 +258,7 @@ export const useStore = create<Store>()(
           germinationDate,
           description: '',
         };
-        set({
-          plants: [...s.plants, plant],
-          genetics: genetic
-            ? s.genetics.map((g) =>
-                g.id === genetic.id ? { ...g, seedsAvailable: (g.seedsAvailable ?? 0) - 1 } : g,
-              )
-            : s.genetics,
-        });
+        set({ plants: [...s.plants, plant] });
         return plant.id;
       },
 

@@ -58,7 +58,7 @@ export default function CerrarCicloScreen() {
       <Rise delay={40}>
         <Card style={{ marginTop: 16, gap: 8 }}>
           <Body style={{ lineHeight: 20 }}>
-            No se borra nada: plantas, riegos y fotos quedan en el historial, en Ciclos anteriores.
+            No se borra nada: plantas, riegos y fotos quedan en el Diario, donde podés elegir este ciclo para revisarlo.
           </Body>
           {plantsLeft ? (
             <Body style={{ lineHeight: 20, color: colors.flora }}>

@@ -3,7 +3,7 @@
 Stack: Expo SDK 58, React Native 0.88, React 19, expo-router, TypeScript strict, Zustand 5 con persist sobre AsyncStorage. Alias `@/` → `src/`.
 
 ## Dónde vive cada cosa
-- `app/`: pantallas (expo-router). `(tabs)/` tiene Carpa (`index`), `diario` y `biblioteca`. Modales: `riego`, `foto`, `clima`, `editar-planta/[id]`, `genetica/[id]`, `receta/[id]`, `fertilizante/[id]`, `plantar/[potId]`, `ciclo/cerrar`, `ciclo/nuevo`. Pantallas: `planta/[id]`, `ciclo/[id]`, `onboarding`. Se registran en `app/_layout.tsx`, que espera la hidratación y manda al onboarding con `Stack.Protected` si no hay carpa.
+- `app/`: pantallas (expo-router). `(tabs)/` tiene Carpa (`index`), `diario` y `biblioteca`. Modales: `riego`, `foto`, `clima`, `editar-planta/[id]`, `genetica/[id]`, `receta/[id]`, `fertilizante/[id]`, `plantar/[potId]`, `ciclo/cerrar`, `ciclo/nuevo`. Pantallas: `planta/[id]`, `onboarding`. El historial de ciclos vive en `diario` (parámetro `ciclo`). Se registran en `app/_layout.tsx`, que espera la hidratación y manda al onboarding con `Stack.Protected` si no hay carpa.
 - `src/types.ts`: entidades (Tent, Cycle, Pot, Plant, PhaseChange, Genetic, Fertilizer, Recipe, Watering, ClimateReading, Photo, Tasting, Settings).
 - `src/store.ts`: todo el estado y las acciones. Persistencia con key `weedly-data` (o `EXPO_PUBLIC_STORE_KEY` para un espacio de prueba), `version: 1`.
 - `src/selectors.ts`: fase y días (`summarize`), riego pendiente (`needsWater`), portada (`coverOf`), plantas del ciclo activo (`activePlants`), último clima con VPD (`latestClimate`).

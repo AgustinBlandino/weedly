@@ -25,6 +25,9 @@ export const colors = {
   danger: '#E5735F',
 };
 
+/** Un color fijo por genética para reconocerla en la carpa. Evita el lime y el ámbar de las alertas. */
+export const geneticPalette = ['#7CC4F2', '#C59BF0', '#F28FB0', '#6FD6C2', '#F2D16B', '#9DB5FF', '#FF9F7A', '#B7E36B'];
+
 export const fonts = {
   display: 'Fraunces_700Bold',
   displaySemi: 'Fraunces_600SemiBold',

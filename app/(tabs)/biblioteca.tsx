@@ -6,7 +6,7 @@ import { namastePack } from '@/seed';
 import { exportDataJson, IS_TEST_STORE, STORE_KEY, useStore } from '@/store';
 import { colors, fonts, radius } from '@/theme';
 import { Body, Card, Chip, Empty, Field, H2, Muted, PrimaryButton, Rise, Screen, Title } from '@/ui';
-import { fmt, parseNum } from '@/utils';
+import { fmt, fmtWeeks, parseNum } from '@/utils';
 
 type Seg = 'geneticas' | 'fertilizantes' | 'recetas' | 'ajustes';
 
@@ -62,14 +62,13 @@ export default function BibliotecaScreen() {
               <Row
                 key={g.id}
                 title={g.name}
-                subtitle={[g.breeder, g.type, g.floweringDays ? `${g.floweringDays} d flora` : ''].filter(Boolean).join(' · ')}
+                subtitle={[g.breeder, g.type, g.floweringDays ? `${fmtWeeks(g.floweringDays)} de flora` : ''].filter(Boolean).join(' · ')}
                 extra={[...g.effects, ...g.flavors].slice(0, 4).join(' · ')}
-                trailing={seedsLabel(g.seedsAvailable)}
                 onPress={() => router.push(`/genetica/${g.id}`)}
               />
             ))
           ) : (
-            <Empty text="Cargá tus genéticas con lo que dice el banco y cuántas semillas tenés. Cada semilla que plantes se descuenta sola." />
+            <Empty text="Cargá tus genéticas con lo que dice el banco: tipo, semanas de flora, efectos y sabores." />
           )
         ) : null}
 
@@ -151,12 +150,6 @@ export default function BibliotecaScreen() {
       </Rise>
     </Screen>
   );
-}
-
-function seedsLabel(seeds?: number): string {
-  if (seeds == null) return 'Semillas sin cargar';
-  if (seeds === 0) return 'Sin semillas';
-  return seeds === 1 ? '1 semilla' : `${seeds} semillas`;
 }
 
 function Row({

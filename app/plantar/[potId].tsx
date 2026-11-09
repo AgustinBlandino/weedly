@@ -7,11 +7,9 @@ import { useStore } from '@/store';
 import { colors, fonts, radius } from '@/theme';
 import type { Genetic } from '@/types';
 import { Body, Card, Chip, DateField, Empty, Field, IconButton, Muted, PrimaryButton, Rise, Screen, Title } from '@/ui';
-import { fmt, today } from '@/utils';
+import { fmt, fmtWeeks, today } from '@/utils';
 
 const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
-
-const hasStock = (g: Genetic) => (g.seedsAvailable ?? 0) > 0;
 
 export default function PlantarScreen() {
   const { potId } = useLocalSearchParams<{ potId: string }>();
@@ -44,8 +42,8 @@ export default function PlantarScreen() {
   }
 
   const hoy = today();
-  // Si la genética elegida se quedó sin semillas al editarla, deja de contar como elegida.
-  const selected = s.genetics.find((g) => g.id === geneticId && hasStock(g));
+  // Si la genética elegida se borró mientras tanto, deja de contar como elegida.
+  const selected = s.genetics.find((g) => g.id === geneticId);
 
   const confirm = () => {
     if (planting.current) return;
@@ -59,7 +57,7 @@ export default function PlantarScreen() {
     if (!plantId) {
       Alert.alert(
         'No pude plantar',
-        'No se guardó nada. Fijate que la maceta siga libre y que la genética tenga semillas, y probá de nuevo.',
+        'No se guardó nada. Fijate que la maceta siga libre y probá de nuevo.',
       );
       return;
     }
@@ -83,7 +81,7 @@ export default function PlantarScreen() {
         <Rise delay={40}>
           <Card style={{ marginTop: 16, padding: 14, gap: 2 }}>
             <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text }}>
-              Maceta de fila {pot.row + 1}, columna {pot.col + 1}
+              Maceta de fila {pot.row + 1} (desde el frente), columna {pot.col + 1}
             </Text>
             <Muted>
               {fmt(pot.liters)} L · {pot.substrate}
@@ -104,11 +102,9 @@ export default function PlantarScreen() {
               <GeneticOption
                 key={g.id}
                 title={g.name}
-                detail={stockDetail(g)}
+                detail={geneticDetail(g)}
                 selected={selected?.id === g.id}
-                disabled={!hasStock(g)}
                 onPress={() => setGeneticId(g.id)}
-                onEdit={hasStock(g) ? undefined : () => router.push(`/genetica/${g.id}`)}
               />
             ))}
           </View>
@@ -140,28 +136,20 @@ export default function PlantarScreen() {
   );
 }
 
-function stockDetail(g: Genetic): string {
-  const seeds = g.seedsAvailable;
-  if (seeds == null) return 'Sin semillas cargadas: cargalas para poder usarla.';
-  if (seeds === 0) return 'Te quedaste sin semillas: sumá más para poder usarla.';
-  const stock = seeds === 1 ? '1 semilla' : `${seeds} semillas`;
-  return g.type ? `${stock} · ${g.type}` : stock;
+function geneticDetail(g: Genetic): string {
+  return [g.breeder, g.type, g.floweringDays ? `${fmtWeeks(g.floweringDays)} de flora` : ''].filter(Boolean).join(' · ') || 'Sin datos del banco';
 }
 
 function GeneticOption({
   title,
   detail,
   selected,
-  disabled,
   onPress,
-  onEdit,
 }: {
   title: string;
   detail: string;
   selected: boolean;
-  disabled?: boolean;
   onPress: () => void;
-  onEdit?: () => void;
 }) {
   return (
     <View
@@ -176,10 +164,9 @@ function GeneticOption({
     >
       <Pressable
         onPress={onPress}
-        disabled={disabled}
         accessibilityRole="radio"
         accessibilityLabel={`${title}. ${detail}`}
-        accessibilityState={{ checked: selected, disabled: !!disabled }}
+        accessibilityState={{ checked: selected }}
         style={{ flex: 1, minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12 }}
       >
         <Ionicons
@@ -188,20 +175,10 @@ function GeneticOption({
           color={selected ? colors.lime : colors.border}
         />
         <View style={{ flex: 1, gap: 2 }}>
-          <Body style={{ fontFamily: fonts.bodySemi, color: disabled ? colors.muted : colors.text }}>{title}</Body>
+          <Body style={{ fontFamily: fonts.bodySemi, color: colors.text }}>{title}</Body>
           <Muted>{detail}</Muted>
         </View>
       </Pressable>
-      {onEdit ? (
-        <Pressable
-          onPress={onEdit}
-          accessibilityRole="button"
-          accessibilityLabel={`Editar ${title}`}
-          style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 12 }}
-        >
-          <Text style={{ color: colors.lime, fontFamily: fonts.bodySemi, fontSize: 13 }}>Editar</Text>
-        </Pressable>
-      ) : null}
     </View>
   );
 }

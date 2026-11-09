@@ -64,7 +64,6 @@ export default function RootLayout() {
           <Stack.Screen name="plantar/[potId]" options={{ presentation: 'modal' }} />
           <Stack.Screen name="ciclo/cerrar" options={{ presentation: 'modal' }} />
           <Stack.Screen name="ciclo/nuevo" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="ciclo/[id]" />
           <Stack.Screen name="riego" options={{ presentation: 'modal' }} />
           <Stack.Screen name="foto" options={{ presentation: 'modal' }} />
           <Stack.Screen name="clima" options={{ presentation: 'modal' }} />

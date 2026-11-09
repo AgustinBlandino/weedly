@@ -9,8 +9,8 @@ App mobile (Android e iPhone) de seguimiento de cultivo indoor. Hoy es de uso pe
 Agus, un solo usuario. Cultivo: carpa de 80×80×160 cm, 6 macetas de 10 L en tierra (2 columnas, 3 filas), plantas fotoperiódicas feminizadas, germinadas el 30/07/2026 y en flora desde el 08/09. Luz LED, planea SCROG. Fertiliza con el Nutripack de Namasté (marca argentina, orgánico). Tiene iPhone y no tiene Mac, así que prueba con Expo Go y los builds de iOS pasan por EAS.
 
 ## Qué hace la versión actual (v0.1)
-- Onboarding: armar la carpa, arrancar de cero o con plantas en curso.
-- Stock de semillas por genética, plantado en macetas vacías y descarte de plantas.
+- Onboarding: armar la carpa, arrancar de cero o con plantas en curso. Tarjeta "Primeros pasos" (genética, plantar, primera lectura de clima, riego, foto).
+- Plantado en macetas vacías (con cualquier genética o sin asignar) y descarte de plantas.
 - Cierre de ciclo, ciclo nuevo e historial de ciclos anteriores.
 - Carpa en vista 3D isométrica o lista, con plantas renderizadas según su fase.
 - Ficha de planta: fase y días calculados, barra vege/flora, descripción, riegos, fotos, genética, cata.
@@ -18,7 +18,7 @@ Agus, un solo usuario. Cultivo: carpa de 80×80×160 cm, 6 macetas de 10 L en ti
 - Fotos con descripción y etiquetas (poda, LST, plaga...), con opción de portada.
 - Clima manual: temperatura, humedad y VPD calculado.
 - Diario agrupado por día.
-- Biblioteca: genéticas, fertilizantes y recetas.
+- Biblioteca: genéticas (flora en semanas con días calculados; THC/CBD; efectos y sabores con selección múltiple), fertilizantes y recetas.
 
 ## Decisiones ya tomadas
 - Nombre: **Weedly**.
@@ -28,8 +28,11 @@ Agus, un solo usuario. Cultivo: carpa de 80×80×160 cm, 6 macetas de 10 L en ti
 - Intención de **datos en la nube con sync** (Supabase: base y fotos en Storage) para backup y uso en otro dispositivo. Todavía no está hecho: hoy todo vive en el celular (AsyncStorage).
 - Intención de **varias carpas con historial de ciclos**. El modelo de datos lo contempla pero la app todavía no lo expone (ver tensiones).
 - Decisión original: un solo usuario, por simplicidad. Con el giro a "producto para otros growers", esto se reabre cuando haya cuentas.
-- **Onboarding como ciclo completo** (noviembre 2026): armar carpa, cargar semillas, plantar, cultivar, cerrar ciclo y empezar otro. Tiene dos entradas: "Arranco de cero" y "Ya tengo plantas".
-- **Semillas como cantidad por genética**, no como lotes. Si hace falta banco, fecha o precio por compra, se reabre.
+- **Onboarding como ciclo completo** (noviembre 2026): armar carpa, cargar genéticas, plantar, cultivar, cerrar ciclo y empezar otro. Tiene dos entradas: "Arranco de cero" y "Ya tengo plantas".
+- **Sin inventario de semillas** (noviembre 2026): se sacó el stock por genética que había antes. Plantar no descuenta nada ni bloquea genéticas. No sumar lógica de inventario salvo que Agus lo reabra.
+- **Floración en semanas**: la genética se carga en semanas (como la publican los breeders) y se guarda en días (`floweringDays`), así los cálculos y los datos guardados no cambian. El formulario muestra los días como dato calculado, no editable.
+- **Sustrato es texto libre** con atajos (`src/presets.ts`: Tierra, Coco, Turba y perlita, Living Soil). Ninguna lógica depende del valor.
+- **Presets de carpa sin 120 × 60** (noviembre 2026): se sacó del onboarding; esa medida se arma con "Personalizada".
 - **La planta ocupa maceta desde que germina.** No hay semillero aparte: germinar 8 para quedarse con las 6 mejores queda para más adelante.
 - **Las plantas descartadas no se borran**: conservan su historial en el diario y liberan la maceta.
 

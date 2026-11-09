@@ -1,7 +1,8 @@
 import type { Store } from './store';
+import { colors, geneticPalette } from './theme';
 import { PHASE_LABEL } from './types';
 import type { Cycle, Phase, PhaseChange, Photo, Plant, Pot, Watering } from './types';
-import { daysBetween, today, toYmd, parseDate, vpd } from './utils';
+import { daysBetween, fmt, fmtDate, today, toYmd, parseDate, vpd } from './utils';
 
 export interface PlantSummary {
   phase: Phase;
@@ -117,6 +118,24 @@ export function emptyPots(s: Store) {
     .sort((a, b) => a.row - b.row || a.col - b.col);
 }
 
+/** Color estable de una genética: depende de su posición en la biblioteca, no del nombre de la planta. */
+export function geneticColor(s: Store, geneticId: string | undefined): string {
+  const i = geneticId ? s.genetics.findIndex((g) => g.id === geneticId) : -1;
+  return i < 0 ? colors.muted : geneticPalette[i % geneticPalette.length];
+}
+
+/** Genéticas presentes en las plantas activas, con cuántas hay de cada una. */
+export function activeGenetics(s: Store): { id: string; name: string; color: string; count: number }[] {
+  const counts = new Map<string, number>();
+  activePlants(s).forEach(({ plant }) => {
+    if (plant.geneticId) counts.set(plant.geneticId, (counts.get(plant.geneticId) ?? 0) + 1);
+  });
+  return [...counts.entries()].flatMap(([id, count]) => {
+    const g = s.genetics.find((x) => x.id === id);
+    return g ? [{ id, name: g.name, color: geneticColor(s, id), count }] : [];
+  });
+}
+
 export function tentHeadline(s: Store): string {
   const summaries = activePlants(s).map(({ plant }) => summarize(s, plant));
   const first = summaries[0];
@@ -157,6 +176,87 @@ export function archivedCycles(s: Store): { cycle: Cycle; plantCount: number }[]
     .sort((a, b) => (b.cycle.endDate ?? '').localeCompare(a.cycle.endDate ?? ''));
 }
 
+/** Ciclos para el selector del diario: el activo primero, después los cerrados del más reciente al más viejo. */
+export function diaryCycles(s: Store): Cycle[] {
+  const active = activeCycle(s);
+  const archived = archivedCycles(s).map(({ cycle }) => cycle);
+  return active ? [active, ...archived] : archived;
+}
+
+/** Ciclo que muestra el diario de entrada: el activo, o el último cerrado. */
+export function defaultDiaryCycleId(s: Store): string | undefined {
+  return diaryCycles(s)[0]?.id;
+}
+
+export type DiaryEntry =
+  | { kind: 'riego'; date: string; id: string; title: string; detail: string }
+  | { kind: 'foto'; date: string; id: string; title: string; detail: string; uri: string; plantId: string }
+  | { kind: 'clima'; date: string; id: string; title: string; detail: string }
+  | { kind: 'fase'; date: string; id: string; title: string; detail: string; plantId: string };
+
+/** Lectura de clima dentro del ciclo: misma carpa y día entre el inicio y el cierre. */
+function climateInCycle(s: Store, cycle: Cycle, date: string): boolean {
+  const day = toYmd(parseDate(date));
+  if (day < cycle.startDate) return false;
+  if (!cycle.endDate) return true;
+  // Si otro ciclo de la carpa arranca el mismo día que este cierra, ese día es del nuevo.
+  const handover = s.cycles.some((c) => c.id !== cycle.id && c.tentId === cycle.tentId && c.startDate === cycle.endDate);
+  return handover ? day < cycle.endDate : day <= cycle.endDate;
+}
+
+/** Riegos, fotos, clima y cambios de fase de un ciclo, del más nuevo al más viejo. Incluye plantas descartadas. */
+export function cycleEntries(s: Store, cycleId: string): DiaryEntry[] {
+  const cycle = s.cycles.find((c) => c.id === cycleId);
+  if (!cycle) return [];
+  const plantIds = new Set(cyclePlants(s, cycleId).map(({ plant }) => plant.id));
+  const name = (id: string) => s.plants.find((p) => p.id === id)?.name ?? '?';
+
+  const entries: DiaryEntry[] = [
+    ...s.waterings
+      .filter((w) => w.plantIds.some((id) => plantIds.has(id)))
+      .map((w) => ({
+        kind: 'riego' as const,
+        id: w.id,
+        date: w.date,
+        title: `Riego · ${w.plantIds.map(name).join(', ')}`,
+        detail: [w.recipeName ?? 'Solo agua', `${fmt(w.litersPerPlant)} L c/u`, w.ph != null ? `pH ${fmt(w.ph)}` : '', w.ec != null ? `EC ${fmt(w.ec)}` : '']
+          .filter(Boolean)
+          .join(' · '),
+      })),
+    ...s.photos
+      .filter((p) => plantIds.has(p.plantId))
+      .map((p) => ({
+        kind: 'foto' as const,
+        id: p.id,
+        date: p.date,
+        title: `Foto · ${name(p.plantId)}${p.tags.length ? ` · ${p.tags.join(', ')}` : ''}`,
+        detail: p.description,
+        uri: p.uri,
+        plantId: p.plantId,
+      })),
+    ...s.climate
+      .filter((c) => c.tentId === cycle.tentId && climateInCycle(s, cycle, c.date))
+      .map((c) => ({
+        kind: 'clima' as const,
+        id: c.id,
+        date: c.date,
+        title: 'Clima',
+        detail: `${fmt(c.tempC)}° · ${Math.round(c.rh)}% · VPD ${fmt(vpd(c.tempC, c.rh), 2)} kPa`,
+      })),
+    ...s.phases
+      .filter((p) => plantIds.has(p.plantId))
+      .map((p) => ({
+        kind: 'fase' as const,
+        id: p.id,
+        date: `${p.date}T12:00:00`,
+        title: `${name(p.plantId)} pasa a ${PHASE_LABEL[p.phase].toLowerCase()}`,
+        detail: fmtDate(p.date),
+        plantId: p.plantId,
+      })),
+  ];
+  return entries.sort((a, b) => parseDate(b.date).getTime() - parseDate(a.date).getTime());
+}
+
 export interface NewCycleDefaults {
   name: string;
   potCount: number;
@@ -185,7 +285,7 @@ export function newCycleDefaults(s: Store, tentId: string): NewCycleDefaults {
 }
 
 export interface FirstStep {
-  id: 'genetica' | 'plantar' | 'riego' | 'foto';
+  id: 'genetica' | 'plantar' | 'clima' | 'riego' | 'foto';
   label: string;
   done: boolean;
 }
@@ -194,6 +294,12 @@ export function firstSteps(s: Store): { steps: FirstStep[]; visible: boolean } {
   const steps: FirstStep[] = [
     { id: 'genetica', label: 'Cargar una genética', done: s.genetics.length > 0 },
     { id: 'plantar', label: 'Plantar la primera semilla', done: s.plants.length > 0 },
+    // Clima solo guarda lecturas ya validadas, así que cualquiera de la carpa activa cuenta.
+    {
+      id: 'clima',
+      label: 'Cargá la primera lectura de temp y humedad',
+      done: s.climate.some((c) => c.tentId === s.activeTentId),
+    },
     { id: 'riego', label: 'Primer riego', done: s.waterings.length > 0 },
     { id: 'foto', label: 'Primera foto', done: s.photos.length > 0 },
   ];

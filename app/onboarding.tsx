@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { existingDateErrors, gridFor } from '@/onboarding';
+import { SUBSTRATE_PRESETS } from '@/presets';
 import { useStore } from '@/store';
 import type { ExistingPlantsInput } from '@/store';
 import { Tent3D } from '@/Tent3D';
@@ -25,11 +26,9 @@ const SIZE_PRESETS = [
   { w: 80, d: 80 },
   { w: 100, d: 100 },
   { w: 120, d: 120 },
-  { w: 120, d: 60 },
 ];
 const HEIGHT_PRESETS = [140, 160, 180, 200];
 const LITER_PRESETS = ['5', '7', '10', '15', '20'];
-const SUBSTRATE_PRESETS = ['Tierra', 'Coco', 'Turba y perlita'];
 const PHASE_OPTIONS = [
   { id: 'germinacion', label: 'Germinación' },
   { id: 'vege', label: 'Vege' },

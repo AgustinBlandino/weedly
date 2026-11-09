@@ -27,10 +27,10 @@ Si la primera vez Expo te pregunta si querés instalar TypeScript, decile que s�
 - **Nueva foto**: cámara o galería, descripción, etiquetas (poda, LST, plaga…) y opción de usarla como portada.
 - **Clima**: temperatura y humedad con VPD calculado.
 - **Diario**: todo lo que pasó, agrupado por día.
-- **Biblioteca**: genéticas, stock de semillas por genética, fertilizantes (el Nutripack de Namasté es un pack opcional), recetas y aviso de riego cada N días.
+- **Biblioteca**: genéticas (flora en semanas con los días calculados solos, THC/CBD, efectos y sabores elegidos de una lista o agregados a mano), fertilizantes (el Nutripack de Namasté es un pack opcional), recetas y aviso de riego cada N días.
 
-- **Onboarding**: la primera vez armás la carpa y elegís arrancar de cero o cargar plantas que ya tenés. Si la app ya tiene datos guardados, no aparece.
-- **Plantar**: tocás una maceta vacía, elegís genética y fecha, y se descuenta una semilla. Una planta descartada conserva su historial y libera la maceta.
+- **Onboarding**: la primera vez armás la carpa (medidas rápidas o personalizadas; sustrato Tierra, Coco, Turba y perlita, Living Soil u otro) y elegís arrancar de cero o cargar plantas que ya tenés. Después, la tarjeta "Primeros pasos" guía genética, plantado, primera lectura de clima, riego y foto. Si la app ya tiene datos guardados, no aparece.
+- **Plantar**: tocás una maceta vacía, elegís genética y fecha de germinación. Una planta descartada conserva su historial y libera la maceta.
 - **Ciclos**: cerrás el ciclo sin borrar nada, empezás otro con los valores del anterior y consultás los ciclos pasados.
 
 ## Dónde se guardan los datos

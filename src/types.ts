@@ -60,13 +60,12 @@ export interface Genetic {
   name: string;
   breeder: string;
   type: string; // ej: "Fem · Foto"
-  floweringDays?: number;
+  floweringDays?: number; // se carga en semanas, se guarda en días
   thc?: string;
   cbd?: string;
   effects: string[];
   flavors: string[];
   notes: string;
-  seedsAvailable?: number;
 }
 
 export interface Fertilizer {

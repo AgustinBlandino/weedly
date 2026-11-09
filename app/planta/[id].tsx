@@ -9,7 +9,7 @@ import { colors, fonts, radius } from '@/theme';
 import { TiltPhoto } from '@/TiltPhoto';
 import { Phase, PHASE_LABEL } from '@/types';
 import { Body, Card, Chip, Empty, Field, H2, IconButton, Muted, PrimaryButton, Rise, Title } from '@/ui';
-import { fmt, fmtDate, fmtDateTime, fmtDateYear, parseNum, relDays, today } from '@/utils';
+import { fmt, fmtDate, fmtDateTime, fmtDateYear, fmtWeeks, parseNum, relDays, today } from '@/utils';
 
 type Tab = 'resumen' | 'riegos' | 'fotos' | 'genetica' | 'cata';
 const TABS: { id: Tab; label: string }[] = [
@@ -197,7 +197,7 @@ export default function PlantaScreen() {
                 <Card style={{ gap: 4 }}>
                   <Text style={{ fontFamily: fonts.bodySemi, fontSize: 16, color: colors.text }}>{genetic.name}</Text>
                   <Muted>
-                    {[genetic.breeder, genetic.type, genetic.floweringDays ? `${genetic.floweringDays} d de flora` : '', genetic.thc ? `THC ${genetic.thc}` : '']
+                    {[genetic.breeder, genetic.type, genetic.floweringDays ? `${fmtWeeks(genetic.floweringDays)} de flora` : '', genetic.thc ? `THC ${genetic.thc}` : '']
                       .filter(Boolean)
                       .join(' · ')}
                   </Muted>

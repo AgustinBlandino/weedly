@@ -1,58 +1,58 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import React from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import { Image, Pressable, Text, View } from 'react-native';
+import {
+  activeCycle,
+  coverOf,
+  cycleEntries,
+  cyclePlants,
+  defaultDiaryCycleId,
+  diaryCycles,
+  summarize,
+  type DiaryEntry as Entry,
+} from '@/selectors';
 import { useStore } from '@/store';
-import { colors, fonts } from '@/theme';
+import { colors, fonts, radius } from '@/theme';
+import type { Cycle } from '@/types';
 import { PHASE_LABEL } from '@/types';
-import { Body, Card, Empty, Muted, Rise, Screen, Title } from '@/ui';
-import { fmt, fmtDate, fmtDateTime, parseDate, toYmd, vpd } from '@/utils';
+import { Body, Card, Empty, H2, Muted, Rise, Screen, Title } from '@/ui';
+import { fmt, fmtDate, fmtDateTime, fmtDateYear, parseDate, toYmd } from '@/utils';
 
-type Entry =
-  | { kind: 'riego'; date: string; id: string; title: string; detail: string }
-  | { kind: 'foto'; date: string; id: string; title: string; detail: string; uri: string; plantId: string }
-  | { kind: 'clima'; date: string; id: string; title: string; detail: string }
-  | { kind: 'fase'; date: string; id: string; title: string; detail: string; plantId: string };
+function cycleDates(c: Cycle): string {
+  return c.status === 'activo'
+    ? `desde ${fmtDateYear(c.startDate)}`
+    : `${fmtDateYear(c.startDate)}${c.endDate ? ` – ${fmtDateYear(c.endDate)}` : ''}`;
+}
 
 export default function DiarioScreen() {
+  const { ciclo } = useLocalSearchParams<{ ciclo?: string }>();
   const s = useStore();
-  const name = (id: string) => s.plants.find((p) => p.id === id)?.name ?? '?';
+  const [open, setOpen] = useState(false);
+  const cycles = diaryCycles(s);
+  const activeId = activeCycle(s)?.id;
+  // La pestaña queda montada: la elección vive en estado local y solo vale mientras no cambie el ciclo activo.
+  const [selection, setSelection] = useState<{ id: string; activeId?: string }>();
 
-  const entries: Entry[] = [
-    ...s.waterings.map((w) => ({
-      kind: 'riego' as const,
-      id: w.id,
-      date: w.date,
-      title: `Riego · ${w.plantIds.map(name).join(', ')}`,
-      detail: [w.recipeName ?? 'Solo agua', `${fmt(w.litersPerPlant)} L c/u`, w.ph != null ? `pH ${fmt(w.ph)}` : '', w.ec != null ? `EC ${fmt(w.ec)}` : '']
-        .filter(Boolean)
-        .join(' · '),
-    })),
-    ...s.photos.map((p) => ({
-      kind: 'foto' as const,
-      id: p.id,
-      date: p.date,
-      title: `Foto · ${name(p.plantId)}${p.tags.length ? ` · ${p.tags.join(', ')}` : ''}`,
-      detail: p.description,
-      uri: p.uri,
-      plantId: p.plantId,
-    })),
-    ...s.climate.map((c) => ({
-      kind: 'clima' as const,
-      id: c.id,
-      date: c.date,
-      title: 'Clima',
-      detail: `${fmt(c.tempC)}° · ${Math.round(c.rh)}% · VPD ${fmt(vpd(c.tempC, c.rh), 2)} kPa`,
-    })),
-    ...s.phases.map((p) => ({
-      kind: 'fase' as const,
-      id: p.id,
-      date: `${p.date}T12:00:00`,
-      title: `${name(p.plantId)} pasa a ${PHASE_LABEL[p.phase].toLowerCase()}`,
-      detail: fmtDate(p.date),
-      plantId: p.plantId,
-    })),
-  ].sort((a, b) => parseDate(b.date).getTime() - parseDate(a.date).getTime());
+  // El param `ciclo` (desde "Ver ciclos anteriores") se pasa al estado y se limpia,
+  // así no queda pegado y volver a tocar el enlace lo vuelve a aplicar.
+  useEffect(() => {
+    if (!ciclo) return;
+    setSelection({ id: ciclo, activeId });
+    setOpen(false);
+    router.setParams({ ciclo: undefined });
+  }, [ciclo]);
+
+  const selectedId = selection && selection.activeId === activeId ? selection.id : undefined;
+  const cycleId = selectedId && cycles.some((c) => c.id === selectedId) ? selectedId : defaultDiaryCycleId(s);
+  const cycle = cycles.find((c) => c.id === cycleId);
+  const isActive = !!cycle && cycle.id === activeId;
+  const entries: Entry[] = cycleId ? cycleEntries(s, cycleId) : [];
+
+  const pick = (id: string) => {
+    setOpen(false);
+    setSelection({ id, activeId });
+  };
 
   // Agrupar por día
   const groups: { day: string; items: Entry[] }[] = [];
@@ -70,14 +70,101 @@ export default function DiarioScreen() {
     fase: 'flag',
   };
 
+  const subtitle = !cycle
+    ? 'Todo lo que pasó en la carpa, del más nuevo al más viejo.'
+    : isActive
+      ? 'Lo que va del ciclo actual, del más nuevo al más viejo.'
+      : 'Lo que pasó en este ciclo, del más nuevo al más viejo.';
+
   return (
     <Screen>
       <Title size={32}>Diario</Title>
-      <Muted style={{ marginTop: 4 }}>Todo lo que pasó en la carpa, del más nuevo al más viejo.</Muted>
+      <Muted style={{ marginTop: 4 }}>{subtitle}</Muted>
+
+      {cycle ? (
+        <View style={{ marginTop: 16, gap: 8 }}>
+          <Pressable
+            onPress={() => setOpen((o) => !o)}
+            disabled={cycles.length < 2}
+            accessibilityRole="button"
+            accessibilityLabel={`Ciclo: ${cycle.name}${isActive ? ', actual' : ''}${cycles.length > 1 ? '. Tocá para cambiar de ciclo' : ''}`}
+            accessibilityState={{ expanded: cycles.length > 1 ? open : undefined, disabled: cycles.length < 2 }}
+            style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.98 : 1 }] })}
+          >
+            <Card style={{ padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <View style={{ flex: 1, gap: 3 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Text numberOfLines={1} style={{ flexShrink: 1, fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text }}>
+                    {cycle.name}
+                  </Text>
+                  {isActive ? <CurrentBadge /> : null}
+                </View>
+                <Muted>{cycleDates(cycle)}</Muted>
+              </View>
+              {cycles.length > 1 ? (
+                <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={18} color={colors.muted} />
+              ) : null}
+            </Card>
+          </Pressable>
+
+          {open && cycles.length > 1 ? (
+            <View style={{ backgroundColor: colors.cardAlt, borderRadius: radius.md, padding: 4 }}>
+              {cycles.map((c) => {
+                const selected = c.id === cycle.id;
+                const current = c.id === activeId;
+                return (
+                  <Pressable
+                    key={c.id}
+                    onPress={() => pick(c.id)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${c.name}${current ? ', actual' : ''}, ${cycleDates(c)}`}
+                    accessibilityState={{ selected }}
+                    style={({ pressed }) => ({
+                      minHeight: 52,
+                      paddingHorizontal: 12,
+                      paddingVertical: 8,
+                      borderRadius: radius.sm,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 10,
+                      backgroundColor: pressed ? colors.card : 'transparent',
+                    })}
+                  >
+                    <View style={{ flex: 1, gap: 2 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <Text
+                          numberOfLines={1}
+                          style={{ flexShrink: 1, fontFamily: selected ? fonts.bodySemi : fonts.body, fontSize: 14, color: colors.text }}
+                        >
+                          {c.name}
+                        </Text>
+                        {current ? <CurrentBadge /> : null}
+                      </View>
+                      <Muted>{cycleDates(c)}</Muted>
+                    </View>
+                    {selected ? <Ionicons name="checkmark" size={18} color={colors.lime} /> : null}
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : null}
+        </View>
+      ) : null}
+
+      {cycle && !isActive ? <ClosedCyclePlants cycleId={cycle.id} /> : null}
+
       <View style={{ marginTop: 18, gap: 18 }}>
-        {groups.length === 0 ? <Empty text="Cuando cargues riegos, fotos o clima, aparecen acá." /> : null}
+        {groups.length === 0 ? (
+          <Empty
+            text={
+              cycle && !isActive
+                ? 'En este ciclo no quedaron riegos, fotos ni clima cargados.'
+                : 'Cuando cargues riegos, fotos o clima, aparecen acá.'
+            }
+          />
+        ) : null}
         {groups.map((g, gi) => (
-          <Rise key={g.day} delay={Math.min(gi, 6) * 60} style={{ gap: 10 }}>
+          <Rise key={`${cycleId}-${g.day}`} delay={Math.min(gi, 6) * 60} style={{ gap: 10 }}>
             <Text style={{ fontFamily: fonts.displaySemi, fontSize: 17, color: colors.text }}>{fmtDate(g.day)}</Text>
             {g.items.map((e) => (
               <Pressable
@@ -105,5 +192,73 @@ export default function DiarioScreen() {
         ))}
       </View>
     </Screen>
+  );
+}
+
+function CurrentBadge() {
+  return (
+    <Text
+      style={{
+        backgroundColor: colors.lime,
+        color: colors.bg,
+        fontFamily: fonts.bodySemi,
+        fontSize: 11,
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 8,
+        overflow: 'hidden',
+      }}
+    >
+      actual
+    </Text>
+  );
+}
+
+/** Plantas de un ciclo cerrado, en solo lectura: tocar abre la ficha. */
+function ClosedCyclePlants({ cycleId }: { cycleId: string }) {
+  const s = useStore();
+  const plants = cyclePlants(s, cycleId);
+
+  return (
+    <Rise key={cycleId} delay={40} style={{ marginTop: 18, gap: 10 }}>
+      <H2>Plantas del ciclo</H2>
+      {plants.length ? (
+        plants.map(({ plant, pot }) => {
+          const sum = summarize(s, plant);
+          const cover = coverOf(s, plant);
+          const genetic = s.genetics.find((g) => g.id === plant.geneticId);
+          return (
+            <Pressable
+              key={plant.id}
+              onPress={() => router.push(`/planta/${plant.id}`)}
+              accessibilityRole="button"
+              accessibilityLabel={`Abrir ${plant.name}${genetic ? `, ${genetic.name}` : ''}`}
+              style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.98 : 1 }] })}
+            >
+              <Card style={{ padding: 12, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                {cover ? (
+                  <Image source={{ uri: cover.uri }} style={{ width: 44, height: 44, borderRadius: 22 }} />
+                ) : (
+                  <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.sage, alignItems: 'center', justifyContent: 'center' }}>
+                    <Ionicons name="leaf" size={20} color={colors.leafLight} />
+                  </View>
+                )}
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text }}>
+                    {plant.name} <Text style={{ fontFamily: fonts.body, fontSize: 12, color: colors.muted }}>{genetic?.name ?? ''}</Text>
+                  </Text>
+                  <Muted>
+                    {plant.endedAt ? 'Descartada' : PHASE_LABEL[sum.phase]} · {sum.dayOfLife} {sum.dayOfLife === 1 ? 'día' : 'días'} de vida · {fmt(pot.liters)} L
+                  </Muted>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+              </Card>
+            </Pressable>
+          );
+        })
+      ) : (
+        <Empty text="Este ciclo se cerró sin plantas." />
+      )}
+    </Rise>
   );
 }

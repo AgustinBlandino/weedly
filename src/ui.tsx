@@ -330,7 +330,30 @@ export function DateField({
               }}
             >
               <H2>{label}</H2>
-              {draft != null ? (
+              {draft != null && Platform.OS === 'web' ? (
+                // La librería del calendario no tiene versión web (dibuja null): se usa el input nativo del navegador.
+                React.createElement('input', {
+                  type: 'date',
+                  value: draft,
+                  min: minDate,
+                  max: maxDate,
+                  'aria-label': label,
+                  onChange: (e: { target: { value: string } }) => {
+                    if (isValidYmd(e.target.value)) setDraft(e.target.value);
+                  },
+                  style: {
+                    colorScheme: 'dark',
+                    minHeight: 48,
+                    borderRadius: 14,
+                    border: `1px solid ${colors.border}`,
+                    backgroundColor: colors.cardAlt,
+                    color: colors.text,
+                    padding: '0 14px',
+                    fontSize: 16,
+                    fontFamily: 'inherit',
+                  },
+                })
+              ) : draft != null ? (
                 <DateTimePicker
                   value={atTime(draft, 12)}
                   mode="date"

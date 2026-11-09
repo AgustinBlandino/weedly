@@ -21,6 +21,9 @@ export interface TentItem {
   coverUri?: string;
   alert: boolean;
   phase?: Phase;
+  /** Color de la genética, para reconocerla sin depender del nombre. */
+  color?: string;
+  geneticName?: string;
 }
 
 export interface TentEmptySlot {
@@ -47,8 +50,11 @@ interface Props {
 const ALPHA = (58 * Math.PI) / 180;
 const COS_A = Math.cos(ALPHA);
 const SIN_A = Math.sin(ALPHA);
-const FLOOR = 190;
-const TENT_H = 165;
+const FLOOR = 228;
+const TENT_H = 198;
+const SIDE_GAP = 12; // aire a cada lado de la carpa
+const BOTTOM_GAP = 22; // lugar para el texto "FRENTE"
+const TOP_GAP = 8;
 const SWAY = 9; // grados de vaivén automático
 const REF_SIDE_CM = 80;
 const REF_HEIGHT_CM = 160;
@@ -146,16 +152,31 @@ export function Tent3D({
 
   // La carpa crece poco con las medidas: alcanza para notar el cambio sin que se salga de la vista.
   const longSide = Math.max(widthCm, depthCm);
-  const floorSize = FLOOR * clamp(Math.pow(longSide / REF_SIDE_CM, 0.35), 0.8, 1.15);
-  const floorW = floorSize * Math.max(0.35, widthCm / longSide);
-  const floorD = floorSize * Math.max(0.35, depthCm / longSide);
-  const tentH = TENT_H * clamp(heightCm / REF_HEIGHT_CM, 0.8, 1.15);
+  const rawSize = FLOOR * clamp(Math.pow(longSide / REF_SIDE_CM, 0.35), 0.8, 1.15);
+  const rawW = rawSize * Math.max(0.35, widthCm / longSide);
+  const rawD = rawSize * Math.max(0.35, depthCm / longSide);
+  const rawH = TENT_H * clamp(heightCm / REF_HEIGHT_CM, 0.8, 1.15);
+  // Si no entra en el espacio disponible (girando, o de techo a piso), se achica todo junto.
+  const rawDiag = Math.hypot(rawW, rawD);
+  const fit = Math.min(
+    1,
+    (width - SIDE_GAP * 2) / rawDiag,
+    (height - TOP_GAP - BOTTOM_GAP) / (rawH * SIN_A + rawDiag * COS_A),
+  );
+  const floorSize = rawSize * fit;
+  const floorW = rawW * fit;
+  const floorD = rawD * fit;
+  const tentH = rawH * fit;
   const safeCols = Math.max(1, cols);
   const safeRows = Math.max(1, rows);
 
   const cx = width / 2;
-  // Se baja el piso solo si el techo de una carpa grande quedaría cortado.
-  const cy = Math.max(height / 2 + 62, tentH * SIN_A + (Math.hypot(floorW, floorD) / 2) * COS_A + 6);
+  const halfDiagY = (Math.hypot(floorW, floorD) / 2) * COS_A;
+  // Se baja el piso solo si el techo quedaría cortado, y nunca tanto como para cortar el frente.
+  const cy = Math.min(
+    Math.max(height / 2 + 62, tentH * SIN_A + halfDiagY + TOP_GAP),
+    height - halfDiagY - BOTTOM_GAP,
+  );
   const r = (theta * Math.PI) / 180;
   const cosR = Math.cos(r);
   const sinR = Math.sin(r);
@@ -168,14 +189,15 @@ export function Tent3D({
   const cellW = floorW / safeCols;
   const cellH = floorD / safeRows;
   // Escala de la planta según la celda más chica, con tope para carpas de pocas macetas.
-  const pxPerUnit = Math.min(Math.min(cellW, cellH) * 1.8, 190 * (floorSize / FLOOR));
+  const pxPerUnit = Math.min(Math.min(cellW, cellH) * 1.8, floorSize);
   const spriteSize = pxPerUnit * SPRITE_UNITS;
   const plantW = pxPerUnit * 0.7;
   const plantH = pxPerUnit;
   const potSize = Math.max(14, pxPerUnit * POT_UNITS);
 
+  // El frente es el lado y = +floorD/2; la fila 1 queda pegada a él.
   const place = (row: number, col: number) =>
-    project((col + 0.5) * cellW - floorW / 2, (row + 0.5) * cellH - floorD / 2, 0);
+    project((col + 0.5) * cellW - floorW / 2, floorD / 2 - (row + 0.5) * cellH, 0);
 
   // Plantas y macetas vacías comparten el orden de profundidad.
   const scene = [
@@ -212,9 +234,30 @@ export function Tent3D({
           backgroundColor: colors.cardAlt,
           borderWidth: 1,
           borderColor: '#3A423A',
+          // El borde de abajo del piso es siempre el frente, gire como gire.
+          borderBottomWidth: 3,
+          borderBottomColor: colors.lime,
           transform: planeTransform(0),
         }}
-      />
+      >
+        <Text
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            top: floorD + 4,
+            left: 0,
+            right: 0,
+            textAlign: 'center',
+            fontFamily: fonts.bodyBold,
+            fontSize: 10,
+            letterSpacing: 2,
+            color: colors.lime,
+            opacity: 0.85,
+          }}
+        >
+          FRENTE
+        </Text>
+      </View>
       {/* Parantes de la carpa */}
       {corners.map((c, i) => (
         <View
@@ -276,7 +319,7 @@ export function Tent3D({
               {slot.onPress ? (
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`Maceta vacía, fila ${slot.row + 1}, columna ${slot.col + 1}`}
+                  accessibilityLabel={`Maceta vacía, fila ${slot.row + 1} desde el frente, columna ${slot.col + 1}`}
                   onPress={slot.onPress}
                   style={{
                     position: 'absolute',
@@ -305,14 +348,12 @@ export function Tent3D({
               pointerEvents="none"
               style={{
                 position: 'absolute',
-                left: sx - 20,
+                left: sx - 50,
                 top: labelTop,
-                width: 40,
+                width: 100,
                 height: 22,
-                borderRadius: 8,
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: it.alert ? colors.flora : colors.bg,
                 transform: [
                   {
                     translateY: bob.interpolate({
@@ -323,13 +364,37 @@ export function Tent3D({
                 ],
               }}
             >
-              <Text style={{ fontFamily: fonts.bodyBold, fontSize: 11, color: it.alert ? colors.bg : colors.text }}>
-                {it.name}
-              </Text>
+              <View
+                style={{
+                  height: 22,
+                  paddingHorizontal: 8,
+                  borderRadius: 8,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 5,
+                  backgroundColor: it.alert ? colors.flora : colors.bg,
+                }}
+              >
+                {it.color ? (
+                  <View
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 4,
+                      backgroundColor: it.color,
+                      borderWidth: it.alert ? 1 : 0,
+                      borderColor: colors.bg,
+                    }}
+                  />
+                ) : null}
+                <Text style={{ fontFamily: fonts.bodyBold, fontSize: 11, color: it.alert ? colors.bg : colors.text }}>
+                  {it.name}
+                </Text>
+              </View>
             </Animated.View>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Abrir ${it.name}`}
+              accessibilityLabel={`Abrir ${it.name}${it.geneticName ? `, ${it.geneticName}` : ''}`}
               onPress={() => onPressPlant(it.id)}
               style={{
                 position: 'absolute',

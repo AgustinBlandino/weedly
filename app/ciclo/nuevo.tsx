@@ -1,10 +1,11 @@
 import { router } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Text, View } from 'react-native';
+import { SUBSTRATE_PRESETS } from '@/presets';
 import { activeCycle, activeTent, newCycleDefaults } from '@/selectors';
 import { useStore } from '@/store';
 import { colors, fonts } from '@/theme';
-import { DateField, Empty, Field, IconButton, Muted, PrimaryButton, Rise, Screen, Stepper, Title } from '@/ui';
+import { Chip, DateField, Empty, Field, IconButton, Muted, PrimaryButton, Rise, Screen, Stepper, Title } from '@/ui';
 import { fmt, fmtDateYear, parseNum, today } from '@/utils';
 
 const LITERS_MAX = 200;
@@ -109,7 +110,22 @@ export default function NuevoCicloScreen() {
               Poné un valor mayor a 0 y hasta {LITERS_MAX} L.
             </Text>
           )}
-          <Field label="Sustrato" value={substrate} onChangeText={setSubstrate} maxLength={40} returnKeyType="done" />
+          <View style={{ gap: 8 }}>
+            <Muted style={{ fontSize: 13 }}>Sustrato</Muted>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {SUBSTRATE_PRESETS.map((sub) => (
+                <Chip key={sub} label={sub} active={substrate.trim() === sub} onPress={() => setSubstrate(sub)} />
+              ))}
+            </View>
+            <Field
+              label="Otro sustrato"
+              value={substrate}
+              onChangeText={setSubstrate}
+              accessibilityLabel="Sustrato"
+              maxLength={40}
+              returnKeyType="done"
+            />
+          </View>
           {substrateOk ? null : (
             <Text accessibilityRole="alert" style={{ fontFamily: fonts.body, fontSize: 12, color: colors.danger }}>
               Contame qué sustrato usás.
