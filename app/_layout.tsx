@@ -1,4 +1,4 @@
-import { Fraunces_600SemiBold, Fraunces_700Bold } from '@expo-google-fonts/fraunces';
+import { Fraunces_500Medium_Italic, Fraunces_600SemiBold, Fraunces_700Bold } from '@expo-google-fonts/fraunces';
 import { Inter_400Regular, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
@@ -12,6 +12,7 @@ import { Body, Screen, Title } from '@/ui';
 
 export default function RootLayout() {
   const [loaded] = useFonts({
+    Fraunces_500Medium_Italic,
     Fraunces_600SemiBold,
     Fraunces_700Bold,
     Inter_400Regular,
@@ -70,8 +71,8 @@ export default function RootLayout() {
           <Stack.Screen name="clima" options={{ presentation: 'modal' }} />
           <Stack.Screen name="genetica/[id]" options={{ presentation: 'modal' }} />
           <Stack.Screen name="luminaria/[id]" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="receta/[id]" options={{ presentation: 'modal' }} />
           <Stack.Screen name="fertilizante/[id]" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="catalogo" options={{ presentation: 'modal' }} />
           <Stack.Screen name="cromo/[id]" options={{ presentation: 'modal' }} />
         </Stack.Protected>
         <Stack.Protected guard={!hasTent} redirectTo="/">

@@ -91,3 +91,25 @@ export function vpd(tempC: number, rh: number): number {
   const svp = 0.6108 * Math.exp((17.27 * tempC) / (tempC + 237.3));
   return svp * (1 - rh / 100);
 }
+
+/** THC/CBD para mostrar: "18" o "18,5" → "18%" / "18,5%"; si ya trae % o es un rango o texto, va tal cual. */
+export function fmtCannabinoid(s: string): string {
+  const t = s.trim();
+  return /^\d+([.,]\d+)?$/.test(t) ? `${t.replace('.', ',')}%` : t;
+}
+
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+/** Minúscula inicial salvo siglas ("OG", "CBD"): solo si la segunda letra ya es minúscula. */
+const lowerFirst = (s: string) => (s.length > 1 && s[1] === s[1].toLowerCase() ? s.charAt(0).toLowerCase() + s.slice(1) : s);
+
+/**
+ * Frase corta de ambientación con hasta 2 sabores y 2 efectos: "Cítrico, pino. Relajante, feliz."
+ * Vacía si no hay ninguno.
+ */
+export function flavorPhrase(flavors: string[], effects: string[]): string {
+  const sentence = (items: string[]) => {
+    const list = items.map((x) => x.trim()).filter(Boolean).slice(0, 2);
+    return list.length ? `${capitalize(list.map((x, i) => (i ? lowerFirst(x) : x)).join(', '))}.` : '';
+  };
+  return [sentence(flavors), sentence(effects)].filter(Boolean).join(' ');
+}

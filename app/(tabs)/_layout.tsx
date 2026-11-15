@@ -17,15 +17,15 @@ export default function TabsLayout() {
     >
       <Tabs.Screen
         name="index"
-        options={{ title: 'Cultivo', tabBarIcon: ({ color }) => <Ionicons name="grid-outline" size={22} color={color} /> }}
+        options={{ title: 'Cultivo', tabBarIcon: ({ color }) => <Ionicons name="grid-outline" size={22} color={color as string} /> }}
       />
       <Tabs.Screen
         name="diario"
-        options={{ title: 'Diario', tabBarIcon: ({ color }) => <Ionicons name="reader-outline" size={22} color={color} /> }}
+        options={{ title: 'Diario', tabBarIcon: ({ color }) => <Ionicons name="reader-outline" size={22} color={color as string} /> }}
       />
       <Tabs.Screen
         name="biblioteca"
-        options={{ title: 'Biblioteca', tabBarIcon: ({ color }) => <Ionicons name="library-outline" size={22} color={color} /> }}
+        options={{ title: 'Biblioteca', tabBarIcon: ({ color }) => <Ionicons name="library-outline" size={22} color={color as string} /> }}
       />
     </Tabs>
   );

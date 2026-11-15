@@ -64,11 +64,3 @@ export function PlantSprite({ angle, size, phase = 'flora' }: { angle: number; s
 export function EmptyPotSprite({ size }: { size: number }) {
   return <Image source={EMPTY_POT} fadeDuration={0} resizeMethod="scale" style={{ width: size, height: size }} />;
 }
-
-/**
- * Hoja de sprites de la fase (grilla de 7x7 cuadros, no una imagen suelta).
- * Para mostrar la planta quieta usá <PlantSprite angle={0} size={...} phase={phase} />.
- */
-export function phaseSprite(phase: Phase): number {
-  return SHEETS[phase];
-}

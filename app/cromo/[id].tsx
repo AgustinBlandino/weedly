@@ -4,11 +4,12 @@ import React, { useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Image, PixelRatio, Platform, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { captureRef } from 'react-native-view-shot';
-import { CARD_HEIGHT, CARD_WIDTH, cardTastes, PlantCard, type PlantCardShow } from '@/PlantCard';
+import { CARD_HEIGHT, CARD_WIDTH, PlantCard, type PlantCardShow } from '@/PlantCard';
 import { plantCard } from '@/selectors';
 import { useStore } from '@/store';
 import { colors, radius } from '@/theme';
 import { Body, Chip, IconButton, Label, PrimaryButton, Title } from '@/ui';
+import { flavorPhrase } from '@/utils';
 
 const THUMB = 56;
 
@@ -47,7 +48,7 @@ export default function CromoScreen() {
   const g = data.genetic;
   const hasHarvest = data.floraRemaining != null && !!g?.floweringDays;
   const hasCannabinoids = !!(g?.thc?.trim() || g?.cbd?.trim());
-  const hasTastes = !!g && cardTastes(g.flavors, g.effects).length > 0;
+  const hasTastes = !!g && flavorPhrase(g.flavors, g.effects).length > 0;
   const toggles: { key: keyof PlantCardShow; label: string }[] = [
     ...(hasHarvest ? [{ key: 'harvest' as const, label: 'Cosecha' }] : []),
     ...(hasCannabinoids ? [{ key: 'cannabinoids' as const, label: 'THC / CBD' }] : []),

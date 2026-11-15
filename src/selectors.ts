@@ -1,7 +1,10 @@
 import type { Store } from './store';
 import { colors, geneticPalette } from './theme';
 import { LIGHT_TYPE_LABEL, PHASE_LABEL } from './types';
-import type { Cycle, CycleLight, Genetic, Light, LightType, Phase, PhaseChange, Photo, Plant, Pot, Watering } from './types';
+import { FERTILIZER_CATALOG } from './data/fertilizerCatalog';
+import type { CatalogBrand, CatalogProduct } from './data/fertilizerCatalog';
+import type { Fertilizer, FertilizerStage } from './types';
+import type { Cycle, CycleLight, Genetic, Light, LightType, Phase, PhaseChange, Photo, Plant, Pot, Watering, WateringItem } from './types';
 import { daysBetween, fmt, fmtDate, lightLabel, today, toYmd, parseDate, vpd } from './utils';
 
 export interface PlantSummary {
@@ -88,6 +91,67 @@ export function lastWatering(s: Store, plantId: string): Watering | undefined {
 
 export function wateringsOf(s: Store, plantId: string): Watering[] {
   return s.waterings.filter((w) => w.plantIds.includes(plantId));
+}
+
+/** Mezcla del riego con fertilizante más reciente (de cualquier ciclo), para precargar el próximo. */
+export function lastFeedMix(s: Store): { items: WateringItem[]; date?: string } {
+  let last: Watering | undefined;
+  s.waterings.forEach((w) => {
+    if (!w.items.length) return;
+    if (!last || parseDate(w.date).getTime() > parseDate(last.date).getTime()) last = w;
+  });
+  return last ? { items: last.items, date: last.date } : { items: [] };
+}
+
+/** "Oro Negro 2 ml/L" / "Trico+ 1 g/L". Sin unidad guardada es ml. */
+export function fmtDose(item: WateringItem): string {
+  return `${item.name} ${fmt(item.mlPerL)} ${item.unit ?? 'ml'}/L`;
+}
+
+/** Resumen corto de lo que llevó el riego: "Oro Negro · Trico+", "Solo agua" o la receta vieja si no hay ítems. */
+export function feedSummary(w: Watering, max = 3): string {
+  if (!w.items.length) return w.recipeName ?? 'Solo agua';
+  const names = w.items.map((it) => it.name);
+  const extra = names.length - max;
+  return extra > 0 ? `${names.slice(0, max).join(' · ')} +${extra}` : names.join(' · ');
+}
+
+/** Fases para clasificar un fertilizante, en el orden del ciclo. */
+export const FERTILIZER_STAGES: { value: FertilizerStage; label: string }[] = [
+  { value: 'enraizamiento', label: 'Enraizamiento' },
+  { value: 'vege', label: 'Vege' },
+  { value: 'flora', label: 'Flora' },
+  { value: 'todo', label: 'Todo el ciclo' },
+];
+
+export function stageLabel(stage: FertilizerStage | undefined): string {
+  return FERTILIZER_STAGES.find((x) => x.value === stage)?.label ?? '';
+}
+
+/** Línea estándar de un fertilizante: "Flora · NPK 0-9-18". Mismo formato en catálogo y estante. */
+export function fertilizerInfo(f: Pick<Fertilizer, 'stage' | 'npk'>): string {
+  return [stageLabel(f.stage) || 'Sin fase', f.npk ? `NPK ${f.npk}` : ''].filter(Boolean).join(' · ');
+}
+
+export interface CatalogShelfProduct extends CatalogProduct {
+  /** Id del Fertilizer del estante vinculado a este producto, si ya está. */
+  fertilizerId?: string;
+  onShelf: boolean;
+}
+
+/** Marcas del catálogo con sus productos, marcando cuáles ya están en el estante (por catalogId). */
+export function catalogByBrand(s: Store): (Omit<CatalogBrand, 'products'> & { products: CatalogShelfProduct[] })[] {
+  const byCatalogId = new Map<string, string>();
+  s.fertilizers.forEach((f) => {
+    if (f.catalogId && !byCatalogId.has(f.catalogId)) byCatalogId.set(f.catalogId, f.id);
+  });
+  return FERTILIZER_CATALOG.map((pack) => ({
+    ...pack,
+    products: pack.products.map((p) => {
+      const fertilizerId = byCatalogId.get(p.id);
+      return { ...p, fertilizerId, onShelf: !!fertilizerId };
+    }),
+  }));
 }
 
 export function needsWater(s: Store, plantId: string): boolean {
@@ -274,7 +338,7 @@ export function cycleEntries(s: Store, cycleId: string): DiaryEntry[] {
         id: w.id,
         date: w.date,
         title: `Riego · ${w.plantIds.map(name).join(', ')}`,
-        detail: [w.recipeName ?? 'Solo agua', `${fmt(w.litersPerPlant)} L c/u`, w.ph != null ? `pH ${fmt(w.ph)}` : '', w.ec != null ? `EC ${fmt(w.ec)}` : '']
+        detail: [feedSummary(w), `${fmt(w.litersPerPlant)} L c/u`, w.ph != null ? `pH ${fmt(w.ph)}` : '', w.ec != null ? `EC ${fmt(w.ec)}` : '']
           .filter(Boolean)
           .join(' · '),
       })),
@@ -426,50 +490,53 @@ export function latestClimate(s: Store) {
   return c ? { ...c, vpd: vpd(c.tempC, c.rh) } : undefined;
 }
 
+/** Sexo de la semilla inferido del texto libre de la genética ("Fem · Foto", "Regular"). Sin dato o ambiguo, undefined. */
+export function seedSex(genetic: Genetic | undefined): 'FEM' | 'REG' | undefined {
+  const t = (genetic?.type ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+  const fem = /\bfem/.test(t);
+  const reg = /\breg/.test(t);
+  return fem === reg ? undefined : fem ? 'FEM' : 'REG';
+}
+
 export interface PlantCardData {
   name: string;
   genetic?: Genetic;
+  /** Color de la genética en la carpa; sin genética, undefined. */
+  geneticColor?: string;
+  plantType: Plant['type'];
+  seedSex?: 'FEM' | 'REG';
   phase: Phase;
   dayInPhase: number;
   dayOfLife: number;
+  /** Días que pasó en vege (0 si nunca pasó o sigue en germinación). */
+  vegeDays: number;
   /** Solo en flora, con días de floración cargados en la genética y la planta activa. */
   floraRemaining?: number;
   ended: boolean;
-  /** Posición de la planta en su ciclo (1-based), contando las descartadas. Sin ciclo, no hay número. */
-  number?: number;
-  total?: number;
-  cycleName?: string;
   /** Fotos de la planta, de la más nueva a la más vieja. */
   photos: Photo[];
   cover?: Photo;
 }
 
-/** Todo lo que muestra el cromo de una planta. Si no hay fotos, la pantalla usa el render de la fase. */
+/** Todo lo que muestra el cromo de una planta. Si no hay fotos, la carta usa la ilustración de la fase. */
 export function plantCard(s: Store, plant: Plant): PlantCardData {
   const sum = summarize(s, plant);
-  const cycle = plantCycle(s, plant);
-  // Orden estable: fila, columna, y dentro de la misma maceta germinación e id.
-  const ordered = cycle
-    ? cyclePlants(s, cycle.id).sort(
-        (a, b) =>
-          a.pot.row - b.pot.row ||
-          a.pot.col - b.pot.col ||
-          a.plant.germinationDate.localeCompare(b.plant.germinationDate) ||
-          (a.plant.id < b.plant.id ? -1 : a.plant.id > b.plant.id ? 1 : 0),
-      )
-    : [];
-  const index = ordered.findIndex((x) => x.plant.id === plant.id);
+  const genetic = s.genetics.find((g) => g.id === plant.geneticId);
   return {
     name: plant.name,
-    genetic: s.genetics.find((g) => g.id === plant.geneticId),
+    genetic,
+    geneticColor: genetic ? geneticColor(s, genetic.id) : undefined,
+    plantType: plant.type,
+    seedSex: seedSex(genetic),
     phase: sum.phase,
     dayInPhase: sum.dayInPhase,
     dayOfLife: sum.dayOfLife,
+    vegeDays: sum.vegeDays,
     floraRemaining: sum.floraRemaining,
     ended: sum.ended,
-    number: index >= 0 ? index + 1 : undefined,
-    total: index >= 0 ? ordered.length : undefined,
-    cycleName: cycle?.name,
     photos: photosOf(s, plant.id),
     cover: coverOf(s, plant),
   };

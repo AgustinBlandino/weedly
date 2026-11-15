@@ -2,11 +2,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSyncExternalStore } from 'react';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { namastePack } from './seed';
+import { findCatalogProduct } from './data/fertilizerCatalog';
 import type {
   ClimateReading,
   Cycle,
   Fertilizer,
+  FertilizerStage,
   Genetic,
   Light,
   Phase,
@@ -22,7 +23,7 @@ import type {
 } from './types';
 import { lightLabel, uid } from './utils';
 
-const STORE_VERSION = 1;
+const STORE_VERSION = 3;
 
 // Acceso literal: Expo inlinea process.env.EXPO_PUBLIC_* en build.
 export const STORE_KEY: string = process.env.EXPO_PUBLIC_STORE_KEY || 'weedly-data';
@@ -74,7 +75,8 @@ interface Actions {
     type?: 'foto' | 'auto';
   }) => string | undefined;
   discardPlant: (plantId: string, date: string) => void;
-  addNamastePack: () => void;
+  /** Suma al estante los productos del catálogo que falten (por catalogId). Devuelve los ids creados. */
+  addFromCatalog: (productIds: string[]) => string[];
   addWatering: (w: Omit<Watering, 'id'>) => void;
   deleteWatering: (id: string) => void;
   addClimate: (c: Omit<ClimateReading, 'id'>) => void;
@@ -162,6 +164,63 @@ function upsert<T extends { id: string }>(list: T[], item: T): T[] {
   const next = list.slice();
   next[i] = item;
   return next;
+}
+
+// Ids que usaba el viejo pack Namasté (addNamastePack) → producto del catálogo.
+const LEGACY_NAMASTE_CATALOG: Record<string, string> = {
+  'fert-oro-negro': 'nm-oronegro',
+  'fert-amazonia': 'nm-amazonia',
+  'fert-flora-booster': 'nm-florabooster',
+  'fert-trico': 'nm-trico',
+  'fert-shanti': 'nm-shanti',
+};
+
+/**
+ * Migraciones del estado guardado. Cada paso es idempotente y no toca lo que no conoce.
+ * v1 → v2: vincula los fertilizantes del viejo pack Namasté con el catálogo (solo catalogId;
+ * id, nombre y unidad quedan como estaban, en ml implícito).
+ */
+function migrateState(persisted: unknown, version: number): unknown {
+  if (!persisted || typeof persisted !== 'object') return persisted;
+  let state = persisted as Partial<Data>;
+  if (version < 2 && Array.isArray(state.fertilizers)) {
+    const linked = new Set(state.fertilizers.map((f) => f?.catalogId).filter(Boolean));
+    state = {
+      ...state,
+      fertilizers: state.fertilizers.map((f) => {
+        const catalogId = f && LEGACY_NAMASTE_CATALOG[f.id];
+        if (!catalogId || f.catalogId || linked.has(catalogId)) return f;
+        linked.add(catalogId);
+        return { ...f, catalogId };
+      }),
+    };
+  }
+  // v2 → v3: formato único de fertilizante (fase + NPK). Los vinculados al catálogo toman fase y
+  // NPK de ahí; el "role" viejo se traduce a fase y se descarta. Nombre y unidad no se tocan.
+  if (version < 3 && Array.isArray(state.fertilizers)) {
+    state = {
+      ...state,
+      fertilizers: state.fertilizers.map((f) => {
+        if (!f || typeof f !== 'object') return f;
+        const { role, ...rest } = f as typeof f & { role?: string };
+        const cat = f.catalogId ? findCatalogProduct(f.catalogId)?.product : undefined;
+        return {
+          ...rest,
+          stage: f.stage ?? cat?.stage ?? stageFromRole(role),
+          npk: f.npk ?? cat?.npk,
+        };
+      }),
+    };
+  }
+  return state;
+}
+
+function stageFromRole(role: string | undefined): FertilizerStage | undefined {
+  if (!role) return undefined;
+  if (role === 'enraizante') return 'enraizamiento';
+  if (role === 'vege') return 'vege';
+  if (['flora', 'pk', 'melaza', 'estimulador_flora'].includes(role)) return 'flora';
+  return 'todo';
 }
 
 type HydrationStatus = 'pending' | 'ok' | 'error';
@@ -279,11 +338,28 @@ export const useStore = create<Store>()(
         set({ plants: s.plants.map((p) => (p.id === plantId ? { ...p, endedAt: date } : p)) });
       },
 
-      addNamastePack: () => {
+      addFromCatalog: (productIds) => {
         const s = get();
-        const missing = namastePack.filter((f) => !s.fertilizers.some((x) => x.id === f.id));
-        if (!missing.length) return;
-        set({ fertilizers: [...s.fertilizers, ...missing] });
+        const onShelf = new Set(s.fertilizers.map((f) => f.catalogId).filter(Boolean));
+        const created: Fertilizer[] = [];
+        [...new Set(productIds)].forEach((catalogId) => {
+          if (onShelf.has(catalogId)) return;
+          const found = findCatalogProduct(catalogId);
+          if (!found) return;
+          const { brand, product } = found;
+          created.push({
+            id: uid(),
+            brand: brand.brand,
+            name: product.name,
+            unit: product.unit,
+            stage: product.stage,
+            npk: product.npk,
+            catalogId,
+          });
+        });
+        if (!created.length) return [];
+        set({ fertilizers: [...s.fertilizers, ...created] });
+        return created.map((f) => f.id);
       },
 
       addWatering: (w) => set((s) => ({ waterings: [{ ...w, id: uid() }, ...s.waterings] })),
@@ -396,6 +472,7 @@ export const useStore = create<Store>()(
     {
       name: STORE_KEY,
       version: STORE_VERSION,
+      migrate: (persisted, version) => migrateState(persisted, version) as Store,
       storage: createJSONStorage(() => AsyncStorage),
       onRehydrateStorage: () => {
         setHydrationStatus('pending');

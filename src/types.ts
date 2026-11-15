@@ -105,9 +105,22 @@ export interface Fertilizer {
   id: string;
   brand: string;
   name: string;
-  kind: string;
+  /** Dato viejo (tipo libre). Ya no se muestra ni se edita; se conserva en los guardados. */
+  kind?: string;
+  /** Unidad de la dosis. Opcional: si falta es ml (los guardados antes no la tienen). */
+  unit?: DoseUnit;
+  /** Fase del cultivo para la que es el producto. */
+  stage?: FertilizerStage;
+  /** "N-P-K" según la etiqueta, si se conoce. */
+  npk?: string;
+  /** Id del producto en src/data/fertilizerCatalog.ts si se sumó desde el catálogo. */
+  catalogId?: string;
 }
 
+export type DoseUnit = 'ml' | 'g';
+export type FertilizerStage = 'enraizamiento' | 'vege' | 'flora' | 'todo';
+
+/** Recetas: ya no se usan en la UI, pero los datos guardados se conservan. */
 export interface RecipeItem {
   fertilizerId: string;
   mlPerL: number;
@@ -122,7 +135,10 @@ export interface Recipe {
 export interface WateringItem {
   fertilizerId: string;
   name: string;
+  /** Dosis por litro en la unidad de `unit` (ml/L o g/L). Conserva el nombre por compatibilidad con lo guardado. */
   mlPerL: number;
+  /** Opcional: si falta es ml. */
+  unit?: DoseUnit;
 }
 
 export interface Watering {
@@ -130,6 +146,7 @@ export interface Watering {
   date: string; // ISO con hora
   plantIds: string[];
   litersPerPlant: number;
+  /** Solo en riegos viejos, cargados con receta. Los riegos nuevos no los setean. */
   recipeId?: string;
   recipeName?: string;
   items: WateringItem[];

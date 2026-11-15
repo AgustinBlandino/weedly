@@ -2,14 +2,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, Pressable, Share, Text, View } from 'react-native';
-import { namastePack } from '@/seed';
+import { fertilizerInfo, geneticColor } from '@/selectors';
 import { exportDataJson, IS_TEST_STORE, STORE_KEY, useStore } from '@/store';
-import { colors, radius, typo } from '@/theme';
+import { colors, radius, tagTones, typo } from '@/theme';
 import { Body, Card, Chip, Empty, Field, H2, Muted, PrimaryButton, Rise, Screen, Title } from '@/ui';
-import { LIGHT_TYPE_LABEL } from '@/types';
+import { LIGHT_TYPE_LABEL, type Genetic } from '@/types';
 import { fmt, fmtWeeks, lightLabel, parseNum } from '@/utils';
 
-type Seg = 'geneticas' | 'iluminacion' | 'fertilizantes' | 'recetas' | 'ajustes';
+type Seg = 'geneticas' | 'iluminacion' | 'fertilizantes' | 'ajustes';
 
 // Cancelar el share resuelve la promesa con normalidad: solo un rechazo o una falla al armar el JSON es un error.
 async function exportCopy() {
@@ -25,13 +25,10 @@ export default function BibliotecaScreen() {
   const [seg, setSeg] = useState<Seg>('geneticas');
   const [every, setEvery] = useState(String(s.settings.wateringEveryDays));
 
-  const missingFromPack = namastePack.filter((p) => !s.fertilizers.some((f) => f.id === p.id)).length;
-
   const addRoute: Record<Exclude<Seg, 'ajustes'>, string> = {
     geneticas: '/genetica/nueva',
     iluminacion: '/luminaria/nueva',
     fertilizantes: '/fertilizante/nuevo',
-    recetas: '/receta/nueva',
   };
 
   return (
@@ -54,22 +51,13 @@ export default function BibliotecaScreen() {
         <Chip label="Genéticas" active={seg === 'geneticas'} onPress={() => setSeg('geneticas')} />
         <Chip label="Iluminación" active={seg === 'iluminacion'} onPress={() => setSeg('iluminacion')} />
         <Chip label="Fertilizantes" active={seg === 'fertilizantes'} onPress={() => setSeg('fertilizantes')} />
-        <Chip label="Recetas" active={seg === 'recetas'} onPress={() => setSeg('recetas')} />
         <Chip label="Ajustes" active={seg === 'ajustes'} onPress={() => setSeg('ajustes')} />
       </View>
 
       <Rise key={seg} style={{ marginTop: 16, gap: 10 }}>
         {seg === 'geneticas' ? (
           s.genetics.length ? (
-            s.genetics.map((g) => (
-              <Row
-                key={g.id}
-                title={g.name}
-                subtitle={[g.breeder, g.type, g.floweringDays ? `${fmtWeeks(g.floweringDays)} de flora` : ''].filter(Boolean).join(' · ')}
-                extra={[...g.effects, ...g.flavors].slice(0, 4).join(' · ')}
-                onPress={() => router.push(`/genetica/${g.id}`)}
-              />
-            ))
+            s.genetics.map((g) => <GeneticRow key={g.id} genetic={g} color={geneticColor(s, g.id)} />)
           ) : (
             <Empty text="Cargá tus genéticas con lo que dice el banco: tipo, semanas de flora, efectos y sabores." />
           )
@@ -98,44 +86,14 @@ export default function BibliotecaScreen() {
                 <Row
                   key={f.id}
                   title={f.name}
-                  subtitle={[f.brand, f.kind].filter(Boolean).join(' · ')}
+                  subtitle={[f.brand, fertilizerInfo(f)].filter(Boolean).join(' · ')}
                   onPress={() => router.push(`/fertilizante/${f.id}`)}
                 />
               ))
             ) : (
-              <Empty text="Todavía no tenés fertilizantes. Sumá el pack Namasté o cargá los tuyos con el botón +." />
+              <Empty text="Todavía no tenés fertilizantes. Agregalos desde el catálogo o cargá los tuyos con el botón +." />
             )}
-            {missingFromPack ? (
-              <>
-                <PrimaryButton label="Sumar pack Namasté" icon="add" onPress={s.addNamastePack} />
-                {s.fertilizers.length ? (
-                  <Muted>
-                    {missingFromPack === 1 ? 'Falta 1 producto del pack.' : `Faltan ${missingFromPack} productos del pack.`}
-                  </Muted>
-                ) : null}
-              </>
-            ) : null}
           </>
-        ) : null}
-
-        {seg === 'recetas' ? (
-          s.recipes.length ? (
-            s.recipes.map((r) => (
-              <Row
-                key={r.id}
-                title={r.name}
-                subtitle={r.items
-                  .map((it) => {
-                    const f = s.fertilizers.find((x) => x.id === it.fertilizerId);
-                    return `${f?.name ?? '?'} ${fmt(it.mlPerL)} ml/L`;
-                  })
-                  .join(' · ')}
-                onPress={() => router.push(`/receta/${r.id}`)}
-              />
-            ))
-          ) : (
-            <Empty text="Armá tus recetas con las dosis de la etiqueta. Al regar elegís una y te calcula los ml." />
-          )
         ) : null}
 
         {seg === 'ajustes' ? (
@@ -168,6 +126,87 @@ export default function BibliotecaScreen() {
         ) : null}
       </Rise>
     </Screen>
+  );
+}
+
+type IconName = React.ComponentProps<typeof Ionicons>['name'];
+const MAX_TAGS = 3;
+
+/** Pills del tipo de semilla con ícono. Un tipo escrito a mano que no se reconoce se muestra tal cual. */
+function typePills(type: string): { icon?: IconName; label: string }[] {
+  const pills: { icon?: IconName; label: string }[] = [];
+  if (/auto/i.test(type)) pills.push({ icon: 'flash-outline', label: 'Auto' });
+  else if (/foto/i.test(type)) pills.push({ icon: 'sunny-outline', label: 'Foto' });
+  if (/fem/i.test(type)) pills.push({ icon: 'female', label: 'Fem' });
+  else if (/regular/i.test(type)) pills.push({ icon: 'male-female', label: 'Regular' });
+  if (!pills.length && type.trim()) pills.push({ label: type.trim() });
+  return pills;
+}
+
+/** Alterna efectos y sabores para que la tarjeta muestre de los dos aunque haya muchos de uno. */
+function interleaveTags(g: Genetic): { label: string; tone: keyof typeof tagTones }[] {
+  const out: { label: string; tone: keyof typeof tagTones }[] = [];
+  for (let i = 0; i < Math.max(g.effects.length, g.flavors.length); i++) {
+    if (g.effects[i]) out.push({ label: g.effects[i], tone: 'effect' });
+    if (g.flavors[i]) out.push({ label: g.flavors[i], tone: 'flavor' });
+  }
+  return out;
+}
+
+function GeneticRow({ genetic: g, color }: { genetic: Genetic; color: string }) {
+  const pills = [
+    ...typePills(g.type),
+    ...(g.floweringDays ? [{ icon: 'time-outline' as IconName, label: fmtWeeks(g.floweringDays) }] : []),
+    ...(g.thc ? [{ label: `THC ${g.thc}` }] : []),
+  ];
+  const tags = interleaveTags(g);
+  const hidden = tags.length - MAX_TAGS;
+
+  return (
+    <Pressable
+      onPress={() => router.push(`/genetica/${g.id}`)}
+      accessibilityRole="button"
+      accessibilityLabel={g.name}
+      style={({ pressed }) => ({ transform: [{ perspective: 700 }, { rotateX: pressed ? '6deg' : '0deg' }, { scale: pressed ? 0.98 : 1 }] })}
+    >
+      <Card style={{ padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <View style={{ width: 4, alignSelf: 'stretch', borderRadius: 2, backgroundColor: color }} />
+        <View style={{ flex: 1, gap: 8 }}>
+          <View style={{ gap: 2 }}>
+            <Text style={{ ...typo.bodyStrong, color: colors.text }}>{g.name}</Text>
+            {g.breeder ? <Muted>{g.breeder}</Muted> : null}
+          </View>
+          {pills.length ? (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+              {pills.map((p) => (
+                <View
+                  key={p.label}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.cardAlt, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 4 }}
+                >
+                  {p.icon ? <Ionicons name={p.icon} size={12} color={colors.textSoft} /> : null}
+                  <Text style={{ ...typo.badge, color: colors.textSoft }}>{p.label}</Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
+          {tags.length ? (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+              {tags.slice(0, MAX_TAGS).map((t) => (
+                <View key={`${t.tone}-${t.label}`} style={{ backgroundColor: tagTones[t.tone].bg, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 4 }}>
+                  <Text style={{ ...typo.badge, color: tagTones[t.tone].fg }}>{t.label}</Text>
+                </View>
+              ))}
+              {hidden > 0 ? (
+                <View style={{ borderRadius: 10, paddingHorizontal: 6, paddingVertical: 4 }}>
+                  <Text style={{ ...typo.badge, color: colors.muted }}>+{hidden}</Text>
+                </View>
+              ) : null}
+            </View>
+          ) : null}
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={colors.muted} />
+      </Card>
+    </Pressable>
   );
 }
 

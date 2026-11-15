@@ -4,7 +4,7 @@ import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PhaseCard, PHASE_STYLE } from '@/PhaseBar';
 import { PhaseChangeSheet } from '@/PhaseChangeSheet';
-import { coverOf, isPlantActive, lastWatering, phaseSiblings, photosOf, plantCycle, summarize, wateringsOf } from '@/selectors';
+import { coverOf, feedSummary, fmtDose, isPlantActive, lastWatering, phaseSiblings, photosOf, plantCycle, summarize, wateringsOf } from '@/selectors';
 import { useStore } from '@/store';
 import { colors, radius, typo } from '@/theme';
 import { TiltPhoto } from '@/TiltPhoto';
@@ -366,7 +366,7 @@ function RiegosTab({ plantId, readOnly }: { plantId: string; readOnly: boolean }
         >
           <Card style={{ padding: 14, gap: 4 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={{ ...typo.bodyStrong, color: colors.text }}>{w.recipeName ?? 'Solo agua'}</Text>
+              <Text style={{ ...typo.bodyStrong, color: colors.text }}>{w.items.length ? (w.recipeName ?? 'Con fertilizante') : feedSummary(w)}</Text>
               <Muted>{fmtDateTime(w.date)}</Muted>
             </View>
             <Muted>
@@ -376,7 +376,7 @@ function RiegosTab({ plantId, readOnly }: { plantId: string; readOnly: boolean }
             </Muted>
             {w.items.length ? (
               <Muted style={{ color: colors.textSoft }}>
-                {w.items.map((it) => `${it.name} ${fmt(it.mlPerL)} ml/L`).join(' · ')}
+                {w.items.map(fmtDose).join(' · ')}
               </Muted>
             ) : null}
             {w.notes ? <Label style={{ color: colors.textSoft }}>{w.notes}</Label> : null}

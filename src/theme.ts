@@ -33,12 +33,23 @@ export const colors = {
 /** Un color fijo por genética para reconocerla en la carpa. Evita el lime y el ámbar de las alertas. */
 export const geneticPalette = ['#7CC4F2', '#C59BF0', '#F28FB0', '#6FD6C2', '#F2D16B', '#9DB5FF', '#FF9F7A', '#B7E36B'];
 
+/**
+ * Un tono por familia de etiqueta (no por valor), así lo que agrega el usuario también tiene color.
+ * Se usan como fondo suave + texto, nunca como punto o barra: esa forma es la identidad de cada genética.
+ */
+export const tagTones = {
+  effect: { fg: '#C9B8F7', bg: '#2A2440' },
+  flavor: { fg: '#8ED6C4', bg: '#1C322D' },
+};
+
 export const fonts = {
   display: 'Fraunces_700Bold',
   displaySemi: 'Fraunces_600SemiBold',
   body: 'Inter_400Regular',
   bodySemi: 'Inter_600SemiBold',
   bodyBold: 'Inter_700Bold',
+  /** Solo para la frase de ambientación del cromo. */
+  displayItalic: 'Fraunces_500Medium_Italic',
 };
 
 export const radius = { sm: 12, md: 18, lg: 24, xl: 28 };
@@ -88,3 +99,56 @@ export const PHASE_CARD_COLORS: Record<Phase, { frame: string; accent: string; b
   secado: { frame: '#C08A3E', accent: '#E0B070', bg: '#241A10' },
   curado: { frame: '#D4AF37', accent: '#F2D16B', bg: '#221C0C' },
 };
+
+/** Colores fijos de la carta coleccionable (panel crema y dorados), iguales en todas las fases. */
+export const CARD_COLORS = {
+  cream: '#F4EEDF',
+  gold: '#C9A24B',
+  goldInk: '#8A6A2E',
+  ink: '#231B2E',
+  inkSoft: '#4A3F55',
+  inkMuted: '#5E5468',
+  label: '#6E6478',
+  divider: '#DCCFB6',
+  track: '#E2D6C0',
+  onPhase: '#FFFFFF',
+  shadow: '#000000',
+};
+
+/** Paleta de las ilustraciones por fase del cromo (plantas sin foto). */
+export const CARD_ART = {
+  stem: '#3E7D35',
+  leaf: '#4E9A3F',
+  leafTop: '#5FAE47',
+  cotyledon: '#7CC45E',
+  bud: '#8FC46A',
+  budLight: '#A7D47E',
+  budMid: '#9CCB74',
+  budTip: '#B3DB8A',
+  trichome: '#B98BE8',
+  pistil: '#E08A3C',
+  pot: '#3A2C22',
+  potRim: '#4A3A2D',
+  shade: '#000000',
+};
+
+/**
+ * Escala tipográfica del cromo. La carta tiene medidas fijas (300x524) y necesita tamaños propios;
+ * fuera del cromo usá `typo`.
+ */
+export const cardTypo = {
+  pill: { fontFamily: fonts.bodyBold, fontSize: 9, lineHeight: 12, letterSpacing: 1.2 },
+  title: { fontFamily: fonts.display, fontSize: 23, lineHeight: 25 },
+  breeder: { fontFamily: fonts.bodyBold, fontSize: 10, lineHeight: 13, letterSpacing: 1.6 },
+  dayLabel: { fontFamily: fonts.bodyBold, fontSize: 9, lineHeight: 12, letterSpacing: 1 },
+  dayNumber: { fontFamily: fonts.display, fontSize: 30, lineHeight: 33 },
+  stamp: { fontFamily: fonts.bodyBold, fontSize: 9, lineHeight: 11, letterSpacing: 0.5 },
+  stampSmall: { fontFamily: fonts.bodyBold, fontSize: 8, lineHeight: 10, letterSpacing: 0.3 },
+  phaseName: { fontFamily: fonts.bodyBold, fontSize: 14, lineHeight: 18 },
+  phaseDays: { fontFamily: fonts.display, fontSize: 18, lineHeight: 22 },
+  progress: { fontFamily: fonts.body, fontSize: 10, lineHeight: 13 },
+  statLabel: { fontFamily: fonts.bodyBold, fontSize: 8, lineHeight: 10, letterSpacing: 1 },
+  statValue: { fontFamily: fonts.bodyBold, fontSize: 13, lineHeight: 17, fontVariant: ['tabular-nums'] },
+  phrase: { fontFamily: fonts.displayItalic, fontSize: 12, lineHeight: 16 },
+  footer: { fontFamily: fonts.display, fontSize: 22, lineHeight: 28 },
+} satisfies Record<string, TextStyle>;
