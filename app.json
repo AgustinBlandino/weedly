@@ -7,6 +7,7 @@
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#121412",
+    "icon": "./assets/brand/icon.png",
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.agus.weedly",
@@ -15,7 +16,11 @@
       }
     },
     "android": {
-      "package": "com.agus.weedly"
+      "package": "com.agus.weedly",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/brand/adaptive-icon.png",
+        "backgroundColor": "#121412"
+      }
     },
     "plugins": [
       "expo-router",
@@ -29,7 +34,16 @@
       "expo-status-bar",
       "expo-font",
       "@react-native-community/datetimepicker",
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/brand/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#121412"
+        }
+      ]
     ]
   }
 }
