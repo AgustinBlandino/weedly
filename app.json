@@ -9,7 +9,10 @@
     "backgroundColor": "#121412",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.agus.weedly"
+      "bundleIdentifier": "com.agus.weedly",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.agus.weedly"
@@ -25,7 +28,8 @@
       ],
       "expo-status-bar",
       "expo-font",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-sharing"
     ]
   }
 }

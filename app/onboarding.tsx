@@ -17,8 +17,8 @@ import { SUBSTRATE_PRESETS } from '@/presets';
 import { useStore } from '@/store';
 import type { ExistingPlantsInput } from '@/store';
 import { Tent3D } from '@/Tent3D';
-import { colors, fonts, radius } from '@/theme';
-import { Body, Chip, DateField, Field, H2, IconButton, Muted, PrimaryButton, Rise, Stepper, Title } from '@/ui';
+import { colors, radius, typo } from '@/theme';
+import { Body, Chip, DateField, Field, H2, H3, IconButton, Label, Muted, PrimaryButton, Rise, Stepper, Title } from '@/ui';
 import { fmt, parseNum, today } from '@/utils';
 
 const SIZE_PRESETS = [
@@ -54,7 +54,7 @@ const inRange = (n: number | undefined, min: number, max: number): n is number =
 export default function OnboardingScreen() {
   const [step, setStep] = useState<Step>(0);
 
-  // Carpa
+  // Cultivo
   const [nameInput, setNameInput] = useState<string | null>(null);
   const [sizeId, setSizeId] = useState<number | 'custom'>(1);
   const [customW, setCustomW] = useState('80');
@@ -105,7 +105,7 @@ export default function OnboardingScreen() {
     row: Math.floor(i / grid.cols),
     col: i % grid.cols,
   }));
-  const defaultName = `Carpa ${fmt(previewW)} × ${fmt(previewD)}`;
+  const defaultName = `Cultivo ${fmt(previewW)} × ${fmt(previewD)}`;
   const name = nameInput ?? defaultName;
 
   const liters = parseNum(litersInput);
@@ -178,7 +178,7 @@ export default function OnboardingScreen() {
     const { rows, cols } = gridFor(potCount, widthCm, depthCm);
     useStore.getState().setupTent(
       {
-        name: name.trim() || `Carpa ${fmt(widthCm)} × ${fmt(depthCm)}`,
+        name: name.trim() || `Cultivo ${fmt(widthCm)} × ${fmt(depthCm)}`,
         widthCm,
         depthCm,
         heightCm,
@@ -283,8 +283,8 @@ export default function OnboardingScreen() {
                   >
                     <Ionicons name="leaf" size={34} color={colors.leafLight} />
                   </View>
-                  <Title size={36}>Hola, esto es Weedly</Title>
-                  <Body style={{ fontSize: 16, lineHeight: 24, color: colors.textSoft }}>
+                  <Title display>Hola, esto es Weedly</Title>
+                  <Body style={{ color: colors.textSoft }}>
                     Acá vas a seguir tu cultivo día a día. Primero armemos tu carpa: te lleva un par de minutos.
                   </Body>
                 </View>
@@ -292,7 +292,7 @@ export default function OnboardingScreen() {
 
               {step === 1 ? (
                 <View style={{ gap: 16 }}>
-                  <Title size={28}>Armá tu carpa</Title>
+                  <Title>Armá tu carpa</Title>
                   <Field
                     label="Nombre"
                     value={name}
@@ -304,7 +304,7 @@ export default function OnboardingScreen() {
                   />
 
                   <View style={{ gap: 8 }}>
-                    <Muted style={{ fontSize: 13 }}>Medidas (cm)</Muted>
+                    <Label>Medidas (cm)</Label>
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                       {SIZE_PRESETS.map((p, i) => (
                         <Chip key={`${p.w}x${p.d}`} label={`${p.w} × ${p.d}`} active={sizeId === i} onPress={() => setSizeId(i)} />
@@ -347,7 +347,7 @@ export default function OnboardingScreen() {
                   </View>
 
                   <View style={{ gap: 8 }}>
-                    <Muted style={{ fontSize: 13 }}>Altura (cm)</Muted>
+                    <Label>Altura (cm)</Label>
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                       {HEIGHT_PRESETS.map((h) => (
                         <Chip key={h} label={`${h}`} active={heightId === h} onPress={() => setHeightId(h)} />
@@ -380,12 +380,12 @@ export default function OnboardingScreen() {
 
               {step === 2 ? (
                 <View style={{ gap: 16 }}>
-                  <Title size={28}>Tus macetas</Title>
+                  <Title>Tus macetas</Title>
                   <Body style={{ color: colors.textSoft }}>
                     Los mismos litros y sustrato para {potCount === 1 ? 'la maceta' : `las ${potCount} macetas`}.
                   </Body>
                   <View style={{ gap: 8 }}>
-                    <Muted style={{ fontSize: 13 }}>Litros por maceta</Muted>
+                    <Label>Litros por maceta</Label>
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                       {LITER_PRESETS.map((l) => (
                         <Chip key={l} label={`${l} L`} active={liters === Number(l)} onPress={() => setLitersInput(l)} />
@@ -403,7 +403,7 @@ export default function OnboardingScreen() {
                     {!litersOk ? <ErrorText text={`Poné un valor mayor a 0 y hasta ${LITERS_MAX} L.`} /> : null}
                   </View>
                   <View style={{ gap: 8 }}>
-                    <Muted style={{ fontSize: 13 }}>Sustrato</Muted>
+                    <Label>Sustrato</Label>
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                       {SUBSTRATE_PRESETS.map((sub) => (
                         <Chip key={sub} label={sub} active={substrate.trim() === sub} onPress={() => setSubstrate(sub)} />
@@ -425,7 +425,7 @@ export default function OnboardingScreen() {
 
               {step === 3 ? (
                 <View style={{ gap: 16 }}>
-                  <Title size={28}>¿Cómo arrancás?</Title>
+                  <Title>¿Cómo arrancás?</Title>
                   <View accessibilityRole="radiogroup" style={{ gap: 10 }}>
                     <StartOption
                       icon="sparkles-outline"
@@ -454,7 +454,7 @@ export default function OnboardingScreen() {
                         onChange={setExistingCount}
                       />
                       <View style={{ gap: 8 }}>
-                        <Muted style={{ fontSize: 13 }}>Tipo</Muted>
+                        <Label>Tipo</Label>
                         <View style={{ flexDirection: 'row', gap: 8 }}>
                           <Chip label="Foto" active={plantType === 'foto'} onPress={() => setPlantType('foto')} />
                           <Chip label="Auto" active={plantType === 'auto'} onPress={() => setPlantType('auto')} />
@@ -468,7 +468,7 @@ export default function OnboardingScreen() {
                         error={dateErrors.germination}
                       />
                       <View style={{ gap: 8 }}>
-                        <Muted style={{ fontSize: 13 }}>Fase actual</Muted>
+                        <Label>Fase actual</Label>
                         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                           {PHASE_OPTIONS.map((p) => (
                             <Chip key={p.id} label={p.label} active={phase === p.id} onPress={() => setPhase(p.id)} />
@@ -513,7 +513,7 @@ export default function OnboardingScreen() {
 
 function ErrorText({ text }: { text: string }) {
   return (
-    <Text accessibilityRole="alert" style={{ fontFamily: fonts.body, fontSize: 12, color: colors.danger }}>
+    <Text accessibilityRole="alert" style={{ ...typo.caption, color: colors.danger }}>
       {text}
     </Text>
   );
@@ -553,7 +553,7 @@ function StartOption({
     >
       <Ionicons name={icon} size={24} color={selected ? colors.lime : colors.textSoft} />
       <View style={{ flex: 1, gap: 2 }}>
-        <H2 style={{ fontSize: 17 }}>{title}</H2>
+        <H3>{title}</H3>
         <Muted>{detail}</Muted>
       </View>
       <Ionicons name={selected ? 'checkmark-circle' : 'ellipse-outline'} size={22} color={selected ? colors.lime : colors.border} />

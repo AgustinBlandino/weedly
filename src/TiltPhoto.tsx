@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, Image, Text, View, ViewStyle, StyleProp } from 'react-native';
-import { colors, fonts, radius } from './theme';
+import { colors, radius, typo } from './theme';
 
 /** Foto con un balanceo 3D suave en perspectiva. Sin foto, muestra un recuadro para cargarla. */
 export function TiltPhoto({
@@ -61,7 +61,7 @@ export function TiltPhoto({
       ) : (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 6, paddingBottom: 60 }}>
           <Ionicons name="camera-outline" size={28} color={colors.textSoft} />
-          <Text style={{ color: colors.textSoft, fontFamily: fonts.bodySemi, fontSize: 13 }}>{emptyLabel}</Text>
+          <Text style={{ color: colors.textSoft, ...typo.labelStrong }}>{emptyLabel}</Text>
         </View>
       )}
       {children}

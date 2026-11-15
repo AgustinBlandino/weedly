@@ -1,10 +1,11 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, KeyboardAvoidingView, View } from 'react-native';
-import { EFFECT_OPTIONS, FLAVOR_OPTIONS, mergeOptions, optionKey } from '@/presets';
+import { EFFECT_OPTIONS, FLAVOR_OPTIONS, mergeOptions, optionKey, SEED_TYPE_ICON } from '@/presets';
+import { geneticColor } from '@/selectors';
 import { useStore } from '@/store';
-import { colors } from '@/theme';
-import { Chip, Field, H2, IconButton, Muted, PrimaryButton, Screen, Title } from '@/ui';
+import { colors, tagTones } from '@/theme';
+import { Chip, Field, H2, H3, IconButton, Label, Muted, PrimaryButton, Screen, Title } from '@/ui';
 import { fmt, parseNum } from '@/utils';
 
 const TYPE_PATTERN = /^(Fem|Regular) · (Foto|Auto)$/;
@@ -31,6 +32,9 @@ export default function GeneticaScreen() {
   // Las opciones suman lo que ya se cargó en cualquier genética, así nada de lo guardado queda escondido.
   const [effectOptions] = useState(() => mergeOptions(EFFECT_OPTIONS, ...s.genetics.map((g) => g.effects)));
   const [flavorOptions] = useState(() => mergeOptions(FLAVOR_OPTIONS, ...s.genetics.map((g) => g.flavors)));
+
+  // El campo de texto solo aparece para tipos viejos escritos a mano; se decide al abrir para que no desaparezca mientras se edita.
+  const [showTypeField] = useState(() => !!existing?.type.trim() && !TYPE_PATTERN.test(existing.type.trim()));
 
   // Un tipo escrito a mano no prende ningún chip y no cambia hasta que se toque uno.
   const typeMatch = TYPE_PATTERN.exec(type.trim());
@@ -100,22 +104,34 @@ export default function GeneticaScreen() {
         }
       >
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Title size={28}>{existing ? existing.name : 'Nueva genética'}</Title>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+            {existing ? <View style={{ width: 4, height: 28, borderRadius: 2, backgroundColor: geneticColor(s, existing.id) }} /> : null}
+            <Title>{existing ? existing.name : 'Nueva genética'}</Title>
+          </View>
           <IconButton icon="close" label="Cerrar" onPress={() => router.back()} />
         </View>
         <View style={{ gap: 14, marginTop: 18 }}>
           <Field label="Nombre" value={name} onChangeText={setName} />
           <Field label="Banco / breeder" value={breeder} onChangeText={setBreeder} />
           <View style={{ gap: 8 }}>
-            <Muted style={{ fontSize: 13 }}>Tipo de semilla</Muted>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              <Chip label="Fem" active={typeMatch?.[1] === 'Fem'} onPress={() => pickType('Fem')} />
-              <Chip label="Regular" active={typeMatch?.[1] === 'Regular'} onPress={() => pickType('Regular')} />
-              <Chip label="Foto" active={typeMatch?.[2] === 'Foto'} onPress={() => pickType(undefined, 'Foto')} />
-              <Chip label="Auto" active={typeMatch?.[2] === 'Auto'} onPress={() => pickType(undefined, 'Auto')} />
+            <Label>Tipo de semilla</Label>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+              <Muted style={{ width: 56 }}>Semilla</Muted>
+              <Chip label="Fem" icon={SEED_TYPE_ICON.Fem} active={typeMatch?.[1] === 'Fem'} onPress={() => pickType('Fem')} />
+              <Chip label="Regular" icon={SEED_TYPE_ICON.Regular} active={typeMatch?.[1] === 'Regular'} onPress={() => pickType('Regular')} />
+            </View>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+              <Muted style={{ width: 56 }}>Ciclo</Muted>
+              <Chip label="Foto" icon={SEED_TYPE_ICON.Foto} active={typeMatch?.[2] === 'Foto'} onPress={() => pickType(undefined, 'Foto')} />
+              <Chip label="Auto" icon={SEED_TYPE_ICON.Auto} active={typeMatch?.[2] === 'Auto'} onPress={() => pickType(undefined, 'Auto')} />
             </View>
           </View>
-          <Field label="Tipo" value={type} onChangeText={setType} placeholder="Fem · Foto" />
+          {showTypeField ? (
+            <View style={{ gap: 6 }}>
+              <Field label="Tipo (escrito a mano)" value={type} onChangeText={setType} placeholder="Fem · Foto" />
+              <Muted>Esta genética tiene un tipo que no coincide con las opciones. Tocá un chip para reemplazarlo o dejalo como está.</Muted>
+            </View>
+          ) : null}
 
           <Section title="Tiempo">
             <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -152,11 +168,11 @@ export default function GeneticaScreen() {
           </Section>
 
           <Section title="Efectos">
-            <MultiSelect options={effectOptions} selected={effects} onChange={setEffects} addLabel="Agregar otro efecto" />
+            <MultiSelect options={effectOptions} selected={effects} onChange={setEffects} addLabel="Agregar otro efecto" tagTone="effect" />
           </Section>
 
           <Section title="Sabores y aromas">
-            <MultiSelect options={flavorOptions} selected={flavors} onChange={setFlavors} addLabel="Agregar otro sabor o aroma" />
+            <MultiSelect options={flavorOptions} selected={flavors} onChange={setFlavors} addLabel="Agregar otro sabor o aroma" tagTone="flavor" />
           </Section>
 
           <Field label="Notas" value={notes} onChangeText={setNotes} multiline />
@@ -169,7 +185,7 @@ export default function GeneticaScreen() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <View style={{ gap: 10, marginTop: 8 }}>
-      <H2 style={{ fontSize: 17 }}>{title}</H2>
+      <H3>{title}</H3>
       {children}
     </View>
   );
@@ -180,11 +196,13 @@ function MultiSelect({
   selected,
   onChange,
   addLabel,
+  tagTone,
 }: {
   options: string[];
   selected: string[];
   onChange: (next: string[]) => void;
   addLabel: string;
+  tagTone: keyof typeof tagTones;
 }) {
   const [draft, setDraft] = useState('');
   // Lo agregado a mano y lo guardado que no esté en la lista también se muestra como chip.
@@ -209,7 +227,7 @@ function MultiSelect({
     <View style={{ gap: 10 }}>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {all.map((o) => (
-          <Chip key={optionKey(o)} label={o} active={selectedKeys.has(optionKey(o))} onPress={() => toggle(o)} />
+          <Chip key={optionKey(o)} label={o} tagTone={tagTone} active={selectedKeys.has(optionKey(o))} onPress={() => toggle(o)} />
         ))}
       </View>
       <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-end' }}>

@@ -3,10 +3,10 @@ import React, { useState } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
 import { isPlantActive, phasesOf } from '@/selectors';
 import { useStore } from '@/store';
-import { colors, fonts } from '@/theme';
+import { colors, typo } from '@/theme';
 import { PHASE_LABEL } from '@/types';
-import { Body, Chip, Field, IconButton, Muted, PrimaryButton, Screen, Title } from '@/ui';
-import { isValidYmd, parseNum } from '@/utils';
+import { Body, Chip, DateField, Field, IconButton, Label, Muted, PrimaryButton, Screen, Title } from '@/ui';
+import { isValidYmd, parseNum, today } from '@/utils';
 
 export default function EditarPlantaScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -29,7 +29,7 @@ export default function EditarPlantaScreen() {
     return (
       <Screen>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Title size={28}>Editar planta</Title>
+          <Title>Editar planta</Title>
           <IconButton icon="close" label="Cerrar" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
         </View>
         <Body style={{ marginTop: 18, color: colors.textSoft }}>No encontré esa planta. Puede que ya no exista.</Body>
@@ -81,7 +81,7 @@ export default function EditarPlantaScreen() {
   return (
     <Screen footer={<PrimaryButton label="Guardar" onPress={save} style={{ flex: 1 }} />}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Title size={28}>Editar {plant.name}</Title>
+        <Title>Editar {plant.name}</Title>
         <IconButton icon="close" label="Cerrar" onPress={() => router.back()} />
       </View>
 
@@ -91,9 +91,9 @@ export default function EditarPlantaScreen() {
 
         <View style={{ gap: 8 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <Muted style={{ fontSize: 13 }}>Genética</Muted>
+            <Label>Genética</Label>
             <Pressable onPress={() => router.push('/genetica/nueva')} hitSlop={8}>
-              <Text style={{ color: colors.lime, fontFamily: fonts.bodySemi, fontSize: 13 }}>+ Nueva genética</Text>
+              <Text style={{ color: colors.lime, ...typo.labelStrong }}>+ Nueva genética</Text>
             </Pressable>
           </View>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -111,24 +111,23 @@ export default function EditarPlantaScreen() {
           </View>
         )}
 
-        <Field label="Germinación (AAAA-MM-DD)" value={germ} onChangeText={setGerm} autoCapitalize="none" />
+        <DateField label="Germinación" value={germ} onChange={setGerm} maxDate={today()} />
 
-        <Muted style={{ fontSize: 13, marginTop: 4 }}>Cambios de fase</Muted>
+        <Label style={{ marginTop: 4 }}>Cambios de fase</Label>
         {phases.map((p) =>
           phaseDates[p.id] !== undefined ? (
             <View key={p.id} style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 10 }}>
-              <Field
+              <DateField
                 label={`${PHASE_LABEL[p.phase]} desde`}
                 value={phaseDates[p.id]}
-                onChangeText={(v) => setPhaseDates((cur) => ({ ...cur, [p.id]: v }))}
-                autoCapitalize="none"
+                onChange={(v) => setPhaseDates((cur) => ({ ...cur, [p.id]: v }))}
                 style={{ flex: 1 }}
               />
               <IconButton icon="trash-outline" label={`Borrar fase ${PHASE_LABEL[p.phase]}`} onPress={() => removePhase(p.id)} />
             </View>
           ) : null,
         )}
-        {badDates ? <Muted style={{ color: colors.danger }}>Revisá las fechas: formato AAAA-MM-DD.</Muted> : null}
+        {badDates ? <Muted style={{ color: colors.danger }}>Revisá las fechas: hay alguna sin elegir.</Muted> : null}
       </View>
     </Screen>
   );

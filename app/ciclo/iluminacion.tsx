@@ -4,9 +4,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { activeCycle, activeTent, cycleLights, lightDensity } from '@/selectors';
 import { useStore } from '@/store';
-import { colors, fonts, radius } from '@/theme';
+import { colors, radius, typo } from '@/theme';
 import { LIGHT_TYPE_LABEL } from '@/types';
-import { Body, Card, Empty, H2, IconButton, Muted, PrimaryButton, Rise, Screen, Title } from '@/ui';
+import { Body, Card, Empty, H2, H3, IconButton, Muted, PrimaryButton, Rise, Screen, Title } from '@/ui';
 import { fmt, lightLabel } from '@/utils';
 
 const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
@@ -33,7 +33,7 @@ export default function IluminacionCicloScreen() {
 
   const header = (
     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-      <Title size={28} style={{ flex: 1 }}>
+      <Title style={{ flex: 1 }}>
         Iluminación del ciclo
       </Title>
       <IconButton icon="close" label="Cerrar" onPress={close} />
@@ -45,7 +45,7 @@ export default function IluminacionCicloScreen() {
       <Screen footer={<PrimaryButton label="Volver" onPress={close} style={{ flex: 1 }} />}>
         {header}
         <Rise delay={40} style={{ marginTop: 18 }}>
-          <Empty text="No hay un ciclo activo. Empezá uno desde la Carpa y después elegí su iluminación." />
+          <Empty text="No hay un ciclo activo. Empezá uno desde el Cultivo y después elegí su iluminación." />
         </Rise>
       </Screen>
     );
@@ -104,7 +104,7 @@ export default function IluminacionCicloScreen() {
             <Card style={{ padding: 14, gap: 2 }}>
               {preview ? (
                 <>
-                  <Text style={{ fontFamily: fonts.displaySemi, fontSize: 20, color: colors.lime }}>
+                  <Text style={{ ...typo.stat, color: colors.lime }}>
                     {preview.wPerM2} W/m²
                   </Text>
                   <Muted>
@@ -145,7 +145,7 @@ export default function IluminacionCicloScreen() {
                   >
                     <Ionicons name={checked ? 'checkbox' : 'square-outline'} size={22} color={checked ? colors.lime : colors.muted} />
                     <View style={{ flex: 1, gap: 3 }}>
-                      <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text }}>{name}</Text>
+                      <Text style={{ ...typo.bodyStrong, color: colors.text }}>{name}</Text>
                       <Muted>{detail}</Muted>
                     </View>
                   </Card>
@@ -166,14 +166,14 @@ export default function IluminacionCicloScreen() {
               })}
             >
               <Ionicons name="add-circle-outline" size={18} color={colors.lime} />
-              <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: colors.lime }}>Nueva luminaria</Text>
+              <Text style={{ ...typo.bodyStrong, color: colors.lime }}>Nueva luminaria</Text>
             </Pressable>
           </>
         )}
 
         {orphans.length ? (
           <View style={{ marginTop: 8, gap: 8 }}>
-            <H2 style={{ fontSize: 17 }}>Ya no están en la Biblioteca</H2>
+            <H3>Ya no están en la Biblioteca</H3>
             {orphans.map((l, i) => {
               const name = [l.type ? LIGHT_TYPE_LABEL[l.type] : '', l.label].filter(Boolean).join(' ');
               return (
@@ -196,7 +196,7 @@ export default function IluminacionCicloScreen() {
                   <View style={{ flex: 1, gap: 2 }}>
                     <Body style={{ color: colors.textSoft }}>{name}</Body>
                     <Muted>{fmt(l.watts)} W</Muted>
-                    <Muted style={{ fontSize: 12 }}>Ya no está en tu Biblioteca; queda en el historial del ciclo.</Muted>
+                    <Muted>Ya no está en tu Biblioteca; queda en el historial del ciclo.</Muted>
                   </View>
                 </View>
               );

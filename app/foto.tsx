@@ -3,12 +3,13 @@ import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
+import { persistPhoto } from '@/photoFiles';
 import { activePlants, summarize } from '@/selectors';
 import { useStore } from '@/store';
-import { colors, fonts, radius } from '@/theme';
+import { colors, typo } from '@/theme';
 import { TiltPhoto } from '@/TiltPhoto';
 import { PHASE_LABEL } from '@/types';
-import { Chip, Empty, Field, IconButton, Muted, PrimaryButton, Rise, Screen, Title, Toggle } from '@/ui';
+import { Chip, Empty, Field, IconButton, Label, Muted, PrimaryButton, Rise, Screen, Title, Toggle } from '@/ui';
 import { fmtDate, today } from '@/utils';
 
 const TAGS = ['Nota', 'Poda', 'LST', 'SCROG', 'Defoliación', 'Plaga', 'Cosecha'];
@@ -24,6 +25,7 @@ export default function FotoScreen() {
   const [description, setDescription] = useState('');
   const [tags, setTags] = useState<string[]>(['Nota']);
   const [asCover, setAsCover] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const plant = s.plants.find((p) => p.id === plantId);
   const sum = plant ? summarize(s, plant) : undefined;
@@ -42,10 +44,20 @@ export default function FotoScreen() {
     if (!res.canceled && res.assets[0]) setUri(res.assets[0].uri);
   };
 
-  const save = () => {
-    if (!plantId || !uri) return;
+  const save = async () => {
+    if (!plantId || !uri || saving) return;
+    setSaving(true);
+    let stored: string;
+    try {
+      // Lo que devuelve el selector puede estar en una carpeta temporal: se copia a la de la app.
+      stored = await persistPhoto(uri);
+    } catch {
+      setSaving(false);
+      Alert.alert('No pude guardar la foto', 'Probá elegirla de nuevo. Si sigue pasando, revisá el espacio libre del celu.');
+      return;
+    }
     s.addPhoto(
-      { plantId, uri, date: new Date().toISOString(), description: description.trim(), tags },
+      { plantId, uri: stored, date: new Date().toISOString(), description: description.trim(), tags },
       asCover,
     );
     router.back();
@@ -55,7 +67,7 @@ export default function FotoScreen() {
     return (
       <Screen>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Title size={28}>Nueva foto</Title>
+          <Title>Nueva foto</Title>
           <IconButton icon="close" label="Cerrar" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
         </View>
         <Rise delay={40} style={{ marginTop: 18 }}>
@@ -70,14 +82,14 @@ export default function FotoScreen() {
       footer={
         <PrimaryButton
           label={uri ? 'Guardar foto' : 'Elegí o sacá una foto'}
-          disabled={!uri || !plantId}
+          disabled={!uri || !plantId || saving}
           onPress={save}
           style={{ flex: 1 }}
         />
       }
     >
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Title size={28}>Nueva foto</Title>
+        <Title>Nueva foto</Title>
         <IconButton icon="close" label="Cerrar" onPress={() => router.back()} />
       </View>
 
@@ -100,7 +112,7 @@ export default function FotoScreen() {
 
       {!initial ? (
         <>
-          <Muted style={{ marginTop: 16, marginBottom: 8, fontSize: 13 }}>Planta</Muted>
+          <Label style={{ marginTop: 16, marginBottom: 8 }}>Planta</Label>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {list.map(({ plant: p }) => (
               <Chip key={p.id} label={p.name} active={plantId === p.id} onPress={() => setPlantId(p.id)} />
@@ -118,7 +130,7 @@ export default function FotoScreen() {
         style={{ marginTop: 16 }}
       />
 
-      <Muted style={{ marginTop: 16, marginBottom: 8, fontSize: 13 }}>Etiquetas</Muted>
+      <Label style={{ marginTop: 16, marginBottom: 8 }}>Etiquetas</Label>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {TAGS.map((t) => (
           <Chip
@@ -131,7 +143,7 @@ export default function FotoScreen() {
       </View>
 
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
-        <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: colors.text }}>
+        <Text style={{ ...typo.bodyStrong, color: colors.text }}>
           Usar como portada{plant ? ` de ${plant.name}` : ''}
         </Text>
         <Toggle value={asCover} onChange={setAsCover} label="Usar como portada" />
@@ -146,8 +158,7 @@ function Tag({ text, flora }: { text: string; flora?: boolean }) {
       style={{
         backgroundColor: flora ? colors.floraBg : colors.bg,
         color: flora ? colors.flora : colors.text,
-        fontFamily: fonts.bodySemi,
-        fontSize: 12,
+        ...typo.captionStrong,
         paddingHorizontal: 10,
         paddingVertical: 6,
         borderRadius: 12,
@@ -177,7 +188,7 @@ function SourceButton({ icon, label, onPress }: { icon: React.ComponentProps<typ
       })}
     >
       <Ionicons name={icon} size={18} color={colors.text} />
-      <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: colors.text }}>{label}</Text>
+      <Text style={{ ...typo.bodyStrong, color: colors.text }}>{label}</Text>
     </Pressable>
   );
 }

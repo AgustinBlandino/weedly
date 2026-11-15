@@ -14,10 +14,10 @@ import {
   type DiaryEntry as Entry,
 } from '@/selectors';
 import { useStore } from '@/store';
-import { colors, fonts, radius } from '@/theme';
+import { colors, radius, typo } from '@/theme';
 import type { Cycle } from '@/types';
 import { PHASE_LABEL } from '@/types';
-import { Body, Card, Empty, H2, Muted, Rise, Screen, Title } from '@/ui';
+import { Body, Card, Empty, H2, Label, Muted, Rise, Screen, Title } from '@/ui';
 import { fmt, fmtDate, fmtDateTime, fmtDateYear, parseDate, toYmd } from '@/utils';
 
 function cycleDates(c: Cycle): string {
@@ -79,7 +79,7 @@ export default function DiarioScreen() {
 
   return (
     <Screen>
-      <Title size={32}>Diario</Title>
+      <Title display>Diario</Title>
       <Muted style={{ marginTop: 4 }}>{subtitle}</Muted>
 
       {cycle ? (
@@ -95,7 +95,7 @@ export default function DiarioScreen() {
             <Card style={{ padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <View style={{ flex: 1, gap: 3 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text numberOfLines={1} style={{ flexShrink: 1, fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text }}>
+                  <Text numberOfLines={1} style={{ flexShrink: 1, ...typo.bodyStrong, color: colors.text }}>
                     {cycle.name}
                   </Text>
                   {isActive ? <CurrentBadge /> : null}
@@ -141,7 +141,7 @@ export default function DiarioScreen() {
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                         <Text
                           numberOfLines={1}
-                          style={{ flexShrink: 1, fontFamily: selected ? fonts.bodySemi : fonts.body, fontSize: 14, color: colors.text }}
+                          style={{ flexShrink: 1, ...(selected ? typo.bodyStrong : typo.body), color: colors.text }}
                         >
                           {c.name}
                         </Text>
@@ -172,7 +172,7 @@ export default function DiarioScreen() {
         ) : null}
         {groups.map((g, gi) => (
           <Rise key={`${cycleId}-${g.day}`} delay={Math.min(gi, 6) * 60} style={{ gap: 10 }}>
-            <Text style={{ fontFamily: fonts.displaySemi, fontSize: 17, color: colors.text }}>{fmtDate(g.day)}</Text>
+            <Text style={{ ...typo.subheading, color: colors.text }}>{fmtDate(g.day)}</Text>
             {g.items.map((e) => (
               <Pressable
                 key={`${e.kind}-${e.id}`}
@@ -188,8 +188,8 @@ export default function DiarioScreen() {
                     </View>
                   )}
                   <View style={{ flex: 1, gap: 3 }}>
-                    <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: colors.text }}>{e.title}</Text>
-                    {e.detail ? <Body style={{ fontSize: 13, color: colors.textSoft }}>{e.detail}</Body> : null}
+                    <Text style={{ ...typo.bodyStrong, color: colors.text }}>{e.title}</Text>
+                    {e.detail ? <Label style={{ color: colors.textSoft }}>{e.detail}</Label> : null}
                     {e.kind !== 'fase' ? <Muted>{fmtDateTime(e.date)}</Muted> : null}
                   </View>
                 </Card>
@@ -208,8 +208,7 @@ function CurrentBadge() {
       style={{
         backgroundColor: colors.lime,
         color: colors.bg,
-        fontFamily: fonts.bodySemi,
-        fontSize: 11,
+        ...typo.badge,
         paddingHorizontal: 8,
         paddingVertical: 2,
         borderRadius: 8,
@@ -251,8 +250,8 @@ function ClosedCyclePlants({ cycleId }: { cycleId: string }) {
                   </View>
                 )}
                 <View style={{ flex: 1, gap: 2 }}>
-                  <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text }}>
-                    {plant.name} <Text style={{ fontFamily: fonts.body, fontSize: 12, color: colors.muted }}>{genetic?.name ?? ''}</Text>
+                  <Text style={{ ...typo.bodyStrong, color: colors.text }}>
+                    {plant.name} <Text style={{ ...typo.caption, color: colors.muted }}>{genetic?.name ?? ''}</Text>
                   </Text>
                   <Muted>
                     {plant.endedAt ? 'Descartada' : PHASE_LABEL[sum.phase]} · {sum.dayOfLife} {sum.dayOfLife === 1 ? 'día' : 'días'} de vida · {fmt(pot.liters)} L

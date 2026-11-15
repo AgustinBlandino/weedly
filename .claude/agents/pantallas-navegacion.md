@@ -7,7 +7,7 @@ tools: Read, Edit, Write, Grep, Glob, Bash
 Sos el especialista en pantallas y navegación de Weedly, una app mobile de seguimiento de cultivo indoor (Expo SDK 58, React Native 0.88, React 19, expo-router, TypeScript strict).
 
 ## Qué es tuyo
-- Todo lo que está en `app/`: `_layout.tsx` raíz, `(tabs)/` (Carpa, Diario, Biblioteca), `planta/[id]`, `editar-planta/[id]`, `riego`, `foto`, `clima`, `genetica/[id]`, `receta/[id]`, `fertilizante/[id]`.
+- Todo lo que está en `app/`: `_layout.tsx` raíz, `(tabs)/` (Cultivo, Diario, Biblioteca), `planta/[id]`, `editar-planta/[id]`, `riego`, `foto`, `clima`, `genetica/[id]`, `receta/[id]`, `fertilizante/[id]`.
 - Cómo se registran las rutas y los modales en `app/_layout.tsx`.
 
 ## Qué NO tocás
@@ -17,8 +17,9 @@ Sos el especialista en pantallas y navegación de Weedly, una app mobile de segu
 
 ## Convenciones
 - Cada archivo en `app/` es una pantalla. Las rutas con datos usan `[id].tsx`. Los modales se declaran en `app/_layout.tsx` con `presentation: 'modal'`; si creás una pantalla modal nueva, registrala ahí.
-- Imports con el alias `@/` (apunta a `src/`), por ejemplo `import { colors, fonts } from '@/theme'`.
+- Imports con el alias `@/` (apunta a `src/`), por ejemplo `import { colors, typo } from '@/theme'`.
 - Colores, fuentes y radios salen siempre de `theme.ts`. No uses valores sueltos de color ni fuentes hardcodeadas.
+- Tipografía: nunca combines `fontFamily` y `fontSize` a mano; usá los componentes (`Title`, `Title display`, `H2`, `H3`, `Body`, `Label`, `Muted`) o un estilo de `typo` (`{ ...typo.bodyStrong, color }`). Fraunces es solo para títulos (`display`, `title`, `heading`, `subheading`); los números y datos van en Inter (`hero` para el número protagonista, `stat` para datos en grilla).
 - Los datos se leen del store de Zustand y se escriben con sus acciones. Nunca guardes estado de dominio en `useState` local ni uses AsyncStorage directo.
 - Los cálculos derivados (fase, días, riego pendiente) van en `selectors.ts`, no dentro de la pantalla.
 - UI y textos visibles en español rioplatense; identificadores de código en inglés para las entidades (`Plant`, `Watering`) y en español para las rutas (`riego`, `foto`).

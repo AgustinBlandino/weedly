@@ -4,9 +4,9 @@ import React, { useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Pressable, Text, View } from 'react-native';
 import { emptyPots } from '@/selectors';
 import { useStore } from '@/store';
-import { colors, fonts, radius } from '@/theme';
+import { colors, radius, typo } from '@/theme';
 import type { Genetic } from '@/types';
-import { Body, Card, Chip, DateField, Empty, Field, IconButton, Muted, PrimaryButton, Rise, Screen, Title } from '@/ui';
+import { Body, Card, Chip, DateField, Empty, Field, IconButton, Label, Muted, PrimaryButton, Rise, Screen, Title } from '@/ui';
 import { fmt, fmtWeeks, today } from '@/utils';
 
 const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
@@ -31,7 +31,7 @@ export default function PlantarScreen() {
     return (
       <Screen>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Title size={28}>Plantar</Title>
+          <Title>Plantar</Title>
           <IconButton icon="close" label="Cerrar" onPress={close} />
         </View>
         <Rise delay={40} style={{ marginTop: 18 }}>
@@ -74,13 +74,13 @@ export default function PlantarScreen() {
         }
       >
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Title size={28}>Plantar</Title>
+          <Title>Plantar</Title>
           <IconButton icon="close" label="Cerrar" onPress={close} />
         </View>
 
         <Rise delay={40}>
           <Card style={{ marginTop: 16, padding: 14, gap: 2 }}>
-            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text }}>
+            <Text style={{ ...typo.bodyStrong, color: colors.text }}>
               Maceta de fila {pot.row + 1} (desde el frente), columna {pot.col + 1}
             </Text>
             <Muted>
@@ -91,9 +91,9 @@ export default function PlantarScreen() {
 
         <Rise delay={100}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 18, marginBottom: 8 }}>
-            <Muted style={{ fontSize: 13 }}>Genética</Muted>
+            <Label>Genética</Label>
             <Pressable onPress={() => router.push('/genetica/nueva')} accessibilityRole="button" hitSlop={12}>
-              <Text style={{ color: colors.lime, fontFamily: fonts.bodySemi, fontSize: 13 }}>+ Nueva genética</Text>
+              <Text style={{ color: colors.lime, ...typo.labelStrong }}>+ Nueva genética</Text>
             </Pressable>
           </View>
           <View accessibilityRole="radiogroup" style={{ gap: 8 }}>
@@ -113,7 +113,7 @@ export default function PlantarScreen() {
         <Rise delay={160}>
           {selected ? null : (
             <View style={{ gap: 8, marginTop: 18 }}>
-              <Muted style={{ fontSize: 13 }}>Tipo</Muted>
+              <Label>Tipo</Label>
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <Chip label="Foto" active={plantType === 'foto'} onPress={() => setPlantType('foto')} />
                 <Chip label="Auto" active={plantType === 'auto'} onPress={() => setPlantType('auto')} />
@@ -175,7 +175,7 @@ function GeneticOption({
           color={selected ? colors.lime : colors.border}
         />
         <View style={{ flex: 1, gap: 2 }}>
-          <Body style={{ fontFamily: fonts.bodySemi, color: colors.text }}>{title}</Body>
+          <Body style={{ ...typo.bodyStrong, color: colors.text }}>{title}</Body>
           <Muted>{detail}</Muted>
         </View>
       </Pressable>

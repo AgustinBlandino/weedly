@@ -5,8 +5,8 @@ import { Alert, KeyboardAvoidingView, Text, View } from 'react-native';
 import { SUBSTRATE_PRESETS } from '@/presets';
 import { activeCycle, activeTent, newCycleDefaults } from '@/selectors';
 import { useStore } from '@/store';
-import { colors, fonts } from '@/theme';
-import { Body, Chip, DateField, Empty, Field, IconButton, Muted, PrimaryButton, Rise, Screen, Stepper, Title } from '@/ui';
+import { colors, typo } from '@/theme';
+import { Body, Chip, DateField, Empty, Field, IconButton, Label, Muted, PrimaryButton, Rise, Screen, Stepper, Title } from '@/ui';
 import { fmt, fmtDateYear, parseNum, today } from '@/utils';
 
 const LITERS_MAX = 200;
@@ -32,7 +32,7 @@ export default function NuevoCicloScreen() {
     return (
       <Screen>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Title size={28}>Ciclo nuevo</Title>
+          <Title>Ciclo nuevo</Title>
           <IconButton icon="close" label="Cerrar" onPress={close} />
         </View>
         <Rise delay={40} style={{ marginTop: 18 }}>
@@ -83,7 +83,7 @@ export default function NuevoCicloScreen() {
     <KeyboardAvoidingView behavior="padding" style={{ flex: 1, backgroundColor: colors.bg }}>
       <Screen footer={<PrimaryButton label="Empezar ciclo" disabled={!canStart} onPress={confirm} style={{ flex: 1 }} />}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Title size={28}>Ciclo nuevo</Title>
+          <Title>Ciclo nuevo</Title>
           <IconButton icon="close" label="Cerrar" onPress={close} />
         </View>
         <Muted style={{ marginTop: 4 }}>
@@ -112,12 +112,12 @@ export default function NuevoCicloScreen() {
             placeholder="10,5"
           />
           {litersOk ? null : (
-            <Text accessibilityRole="alert" style={{ fontFamily: fonts.body, fontSize: 12, color: colors.danger }}>
+            <Text accessibilityRole="alert" style={{ ...typo.caption, color: colors.danger }}>
               Poné un valor mayor a 0 y hasta {LITERS_MAX} L.
             </Text>
           )}
           <View style={{ gap: 8 }}>
-            <Muted style={{ fontSize: 13 }}>Sustrato</Muted>
+            <Label>Sustrato</Label>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               {SUBSTRATE_PRESETS.map((sub) => (
                 <Chip key={sub} label={sub} active={substrate.trim() === sub} onPress={() => setSubstrate(sub)} />
@@ -133,19 +133,19 @@ export default function NuevoCicloScreen() {
             />
           </View>
           {substrateOk ? null : (
-            <Text accessibilityRole="alert" style={{ fontFamily: fonts.body, fontSize: 12, color: colors.danger }}>
+            <Text accessibilityRole="alert" style={{ ...typo.caption, color: colors.danger }}>
               Contame qué sustrato usás.
             </Text>
           )}
           <View
             accessible
-            accessibilityLabel={`Iluminación: ${inheritedLighting}. Se cambia después desde la Carpa.`}
+            accessibilityLabel={`Iluminación: ${inheritedLighting}. Se cambia después desde el Cultivo.`}
             style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}
           >
             <Ionicons name="bulb-outline" size={18} color={defaults.lights.length ? colors.lime : colors.muted} />
             <View style={{ flex: 1, gap: 2 }}>
               <Body style={{ color: colors.textSoft }}>Iluminación: {inheritedLighting}</Body>
-              <Muted>Se cambia después desde la Carpa.</Muted>
+              <Muted>Se cambia después desde el Cultivo.</Muted>
             </View>
           </View>
         </Rise>

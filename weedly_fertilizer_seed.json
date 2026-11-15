@@ -1,0 +1,242 @@
+{
+  "version": "2026-11-15",
+  "conventions": {
+    "dose_unit": "Dosis por litro de agua de riego (ml/L para líquidos, g/L para polvos). Rangos como [min, max]; si es fija, min = max.",
+    "week": "Semana absoluta del cultivo desde que la planta está en maceta (semana 1 = enraizamiento).",
+    "phase": "enraizamiento | vege | flora | lavado",
+    "frequency_default": "Una vez por semana; el resto de los riegos solo con agua (salvo que el pack diga otra cosa).",
+    "confidence": "alta = tabla oficial de la marca; media = armada a partir de las instrucciones oficiales de cada producto; baja = solo hay dosis genéricas, el calendario es una propuesta"
+  },
+  "packs": [
+    {
+      "id": "topcrop-tripack",
+      "brand": "Top Crop",
+      "origin": "España (muy distribuido en AR)",
+      "pack_name": "Tripack (+ Top Candy opcional)",
+      "type": "biomineral",
+      "products": [
+        { "id": "tc-deeper", "name": "Deeper Underground", "role": "enraizante", "unit": "ml", "in_pack": true },
+        { "id": "tc-veg", "name": "Top Veg", "role": "vege", "unit": "ml", "in_pack": true },
+        { "id": "tc-bloom", "name": "Top Bloom", "role": "flora", "unit": "ml", "in_pack": true },
+        { "id": "tc-candy", "name": "Top Candy", "role": "melaza", "unit": "ml", "in_pack": false, "note": "Se vende en los combos Veg + Bloom + Candy" },
+        { "id": "tc-auto", "name": "Top Auto", "role": "base_auto", "unit": "ml", "in_pack": false }
+      ],
+      "schedules": [
+        {
+          "id": "topcrop-principiante-foto",
+          "name": "Principiante – fotoperiódica (tabla oficial)",
+          "plant_type": "fotoperiodica",
+          "confidence": "alta",
+          "notes": "Deeper Underground se dosifica oficialmente por 1,5 L (1 ml/1,5 L y 2 ml/1,5 L); acá está normalizado a ml/L. La dosis de 4 ml/L de Top Veg se puede repetir si se alarga el vege.",
+          "weeks": [
+            { "w": 1, "phase": "enraizamiento", "doses": { "tc-deeper": [0.67, 0.67] } },
+            { "w": 2, "phase": "enraizamiento", "doses": { "tc-deeper": [1.33, 1.33] } },
+            { "w": 3, "phase": "vege", "doses": { "tc-veg": [2, 2] } },
+            { "w": 4, "phase": "vege", "doses": { "tc-veg": [3, 3] } },
+            { "w": 5, "phase": "vege", "doses": { "tc-veg": [4, 4] } },
+            { "w": 6, "phase": "flora", "doses": { "tc-bloom": [2, 2] } },
+            { "w": 7, "phase": "flora", "doses": { "tc-bloom": [3, 3] } },
+            { "w": 8, "phase": "flora", "doses": { "tc-bloom": [3, 3] } },
+            { "w": 9, "phase": "flora", "doses": { "tc-bloom": [4, 4] } },
+            { "w": 10, "phase": "flora", "doses": { "tc-bloom": [4, 4] } },
+            { "w": 11, "phase": "flora", "doses": { "tc-bloom": [4, 4] } },
+            { "w": 12, "phase": "flora", "doses": { "tc-bloom": [3, 3] } },
+            { "w": 13, "phase": "lavado", "doses": {} }
+          ]
+        },
+        {
+          "id": "topcrop-con-candy-foto",
+          "name": "Tripack + Top Candy – fotoperiódica",
+          "plant_type": "fotoperiodica",
+          "confidence": "media",
+          "notes": "Tabla principiante + Top Candy a 1-2 ml/L desde la 3ra semana de flora, como en la tabla oficial de nivel medio.",
+          "weeks": [
+            { "w": 1, "phase": "enraizamiento", "doses": { "tc-deeper": [0.67, 0.67] } },
+            { "w": 2, "phase": "enraizamiento", "doses": { "tc-deeper": [1.33, 1.33] } },
+            { "w": 3, "phase": "vege", "doses": { "tc-veg": [2, 2] } },
+            { "w": 4, "phase": "vege", "doses": { "tc-veg": [3, 3] } },
+            { "w": 5, "phase": "vege", "doses": { "tc-veg": [4, 4] } },
+            { "w": 6, "phase": "flora", "doses": { "tc-bloom": [2, 2] } },
+            { "w": 7, "phase": "flora", "doses": { "tc-bloom": [3, 3] } },
+            { "w": 8, "phase": "flora", "doses": { "tc-bloom": [3, 3], "tc-candy": [1, 2] } },
+            { "w": 9, "phase": "flora", "doses": { "tc-bloom": [4, 4], "tc-candy": [1, 2] } },
+            { "w": 10, "phase": "flora", "doses": { "tc-bloom": [4, 4], "tc-candy": [1, 2] } },
+            { "w": 11, "phase": "flora", "doses": { "tc-bloom": [4, 4], "tc-candy": [1, 2] } },
+            { "w": 12, "phase": "flora", "doses": { "tc-bloom": [3, 3], "tc-candy": [1, 2] } },
+            { "w": 13, "phase": "lavado", "doses": {} }
+          ]
+        },
+        {
+          "id": "topcrop-auto",
+          "name": "Autoflorecientes (tabla oficial, simplificada)",
+          "plant_type": "autofloreciente",
+          "confidence": "alta",
+          "notes": "La tabla oficial suma Big One (2 ml/L en semanas 3 y 6) y Micro Vita (2-5 g/10 L en semanas 3 y 6); quedan fuera porque no vienen en los packs comunes.",
+          "weeks": [
+            { "w": 1, "phase": "enraizamiento", "doses": { "tc-deeper": [0.67, 0.67] } },
+            { "w": 2, "phase": "enraizamiento", "doses": { "tc-deeper": [1.33, 1.33] } },
+            { "w": 3, "phase": "vege", "doses": { "tc-auto": [2.5, 2.5] } },
+            { "w": 4, "phase": "vege", "doses": { "tc-auto": [3, 3], "tc-candy": [1, 2] } },
+            { "w": 5, "phase": "flora", "doses": { "tc-auto": [3.5, 3.5] } },
+            { "w": 6, "phase": "flora", "doses": { "tc-auto": [3.5, 3.5], "tc-candy": [1, 2] } },
+            { "w": 7, "phase": "flora", "doses": { "tc-auto": [3.5, 3.5], "tc-candy": [1, 2] } },
+            { "w": 8, "phase": "flora", "doses": { "tc-auto": [3.5, 3.5], "tc-candy": [1, 2] } },
+            { "w": 9, "phase": "flora", "doses": { "tc-auto": [3.5, 3.5], "tc-candy": [1, 2] } },
+            { "w": 10, "phase": "flora", "doses": { "tc-auto": [3.5, 3.5], "tc-candy": [1, 2] } },
+            { "w": 11, "phase": "flora", "doses": { "tc-candy": [1, 2] } }
+          ]
+        }
+      ],
+      "sources": [
+        "https://pevgrow.com/blog/en/table-top-crop-dosage-uses-and-instructions-for-use/",
+        "https://www.growbarato.net/blog/tabla-de-fertilizantes-top-crop/"
+      ]
+    },
+    {
+      "id": "namaste-nutripack",
+      "brand": "Namasté Nutrientes",
+      "origin": "Argentina",
+      "pack_name": "Nutripack Ciclo Completo (x5)",
+      "type": "organico",
+      "pack_variants_note": "El 5º producto cambia según el lote/stock: Shanti 100 ml o Bioneem 30 ml.",
+      "products": [
+        { "id": "nm-amazonia", "name": "Amazonia Roots", "role": "enraizante", "unit": "g", "size": "150 g", "in_pack": true, "label_use": "3 g/L de agua sin cloro, reposar 1 h y regar lento. Desde los 10 días de vida, cada 15 días durante el vege." },
+        { "id": "nm-oronegro", "name": "Oro Negro", "role": "vege", "unit": "ml", "size": "100 ml", "in_pack": true, "label_use": "2 ml/L, 1 vez por semana desde los 15 días de vida hasta la 2da semana de flora." },
+        { "id": "nm-florabooster", "name": "Flora Booster (PK 0-9-18)", "role": "flora", "unit": "ml", "size": "100 ml", "in_pack": true, "label_use": "Desde la 4ta semana de flora hasta 2 semanas antes del corte, 1 vez por semana. 1ra aplicación 2 ml/L, siguientes hasta 4 ml/L. Indoor: máx. 4 aplicaciones." },
+        { "id": "nm-trico", "name": "Trico+", "role": "melaza", "unit": "g", "size": "100 g", "in_pack": true, "label_use": "Melaza en polvo. 1 vez por semana durante toda la floración. Dosis de riego: verificar en la etiqueta." },
+        { "id": "nm-shanti", "name": "Shanti", "role": "bioestimulante", "unit": "ml", "size": "100 ml", "in_pack": "variante", "label_use": "Bioestimulante (algas + aminoácidos). Dosis: verificar en la etiqueta." },
+        { "id": "nm-bioneem", "name": "Bioneem", "role": "preventivo_plagas", "unit": "ml", "size": "30 ml", "in_pack": "variante", "label_use": "Preventivo de plagas. Dosis: verificar en la etiqueta." }
+      ],
+      "schedules": [
+        {
+          "id": "namaste-nutripack-foto",
+          "name": "Nutripack – fotoperiódica (8 semanas de flora)",
+          "plant_type": "fotoperiodica",
+          "confidence": "media",
+          "notes": "No encontré la tabla impresa que viene en la caja publicada online; este calendario sale de las indicaciones oficiales de cada producto. Las dosis de Trico+ quedan en null hasta confirmarlas con la etiqueta.",
+          "weeks": [
+            { "w": 1, "phase": "enraizamiento", "doses": {} },
+            { "w": 2, "phase": "enraizamiento", "doses": { "nm-amazonia": [3, 3] } },
+            { "w": 3, "phase": "vege", "doses": { "nm-oronegro": [2, 2] } },
+            { "w": 4, "phase": "vege", "doses": { "nm-oronegro": [2, 2], "nm-amazonia": [3, 3] } },
+            { "w": 5, "phase": "vege", "doses": { "nm-oronegro": [2, 2] } },
+            { "w": 6, "phase": "flora", "doses": { "nm-oronegro": [2, 2], "nm-trico": null } },
+            { "w": 7, "phase": "flora", "doses": { "nm-oronegro": [2, 2], "nm-trico": null } },
+            { "w": 8, "phase": "flora", "doses": { "nm-trico": null } },
+            { "w": 9, "phase": "flora", "doses": { "nm-florabooster": [2, 2], "nm-trico": null } },
+            { "w": 10, "phase": "flora", "doses": { "nm-florabooster": [4, 4], "nm-trico": null } },
+            { "w": 11, "phase": "flora", "doses": { "nm-florabooster": [4, 4], "nm-trico": null } },
+            { "w": 12, "phase": "lavado", "doses": {} },
+            { "w": 13, "phase": "lavado", "doses": {} }
+          ]
+        }
+      ],
+      "sources": [
+        "https://www.rhinogrowshop.com/productos/nutripack-namaste/",
+        "https://ganjahpride.com/producto/nutripack-namaste/",
+        "https://ballestergrow.com.ar/producto/combo-trico-oro-negro-y-flora-booster-100-ml-ballester-grow/",
+        "https://www.gabbagrow.com/productos/combo-namaste-oro-negro-flora-booster-500ml-crecimiento-floracion/"
+      ]
+    },
+    {
+      "id": "biobizz-starter",
+      "brand": "BioBizz",
+      "origin": "Países Bajos/España (muy distribuido en AR)",
+      "pack_name": "Starter Pack / Try Pack",
+      "type": "organico",
+      "products": [
+        { "id": "bb-rootjuice", "name": "Root·Juice", "role": "enraizante", "unit": "ml", "in_pack": "solo Try Pack" },
+        { "id": "bb-grow", "name": "Bio·Grow", "role": "vege", "unit": "ml", "in_pack": true },
+        { "id": "bb-bloom", "name": "Bio·Bloom", "role": "flora", "unit": "ml", "in_pack": true },
+        { "id": "bb-topmax", "name": "Top·Max", "role": "estimulador_flora", "unit": "ml", "in_pack": true }
+      ],
+      "schedules": [
+        {
+          "id": "biobizz-lightmix",
+          "name": "Light·Mix / Coco·Mix (tabla oficial)",
+          "plant_type": "fotoperiodica",
+          "confidence": "alta",
+          "notes": "Tabla oficial BioBizz 2021. Las semanas 1 y 2 equivalen a 'propagación' y 'crecimiento'; las 3-10 son las 8 semanas de flora: el vege puede durar lo que haga falta, repitiendo la dosis de crecimiento. Bio·Grow sigue durante la flora. Riego 2-3 veces por semana.",
+          "weeks": [
+            { "w": 1, "phase": "enraizamiento", "doses": { "bb-rootjuice": [4, 4], "bb-grow": [2, 2] } },
+            { "w": 2, "phase": "vege", "doses": { "bb-rootjuice": [4, 4], "bb-grow": [2, 2] } },
+            { "w": 3, "phase": "flora", "doses": { "bb-rootjuice": [2, 2], "bb-grow": [3, 3], "bb-bloom": [2, 2], "bb-topmax": [1, 1] } },
+            { "w": 4, "phase": "flora", "doses": { "bb-rootjuice": [2, 2], "bb-grow": [4, 4], "bb-bloom": [3, 3], "bb-topmax": [2, 2] } },
+            { "w": 5, "phase": "flora", "doses": { "bb-grow": [4, 4], "bb-bloom": [3, 3], "bb-topmax": [2, 2] } },
+            { "w": 6, "phase": "flora", "doses": { "bb-grow": [4, 4], "bb-bloom": [4, 4], "bb-topmax": [3, 3] } },
+            { "w": 7, "phase": "flora", "doses": { "bb-grow": [2, 2], "bb-bloom": [4, 4], "bb-topmax": [3, 3] } },
+            { "w": 8, "phase": "flora", "doses": { "bb-grow": [2, 2], "bb-bloom": [4, 4], "bb-topmax": [4, 4] } },
+            { "w": 9, "phase": "flora", "doses": { "bb-grow": [2, 2], "bb-bloom": [3, 3], "bb-topmax": [4, 4] } },
+            { "w": 10, "phase": "flora", "doses": { "bb-grow": [1, 1], "bb-bloom": [3, 3], "bb-topmax": [1, 1] } },
+            { "w": 11, "phase": "lavado", "doses": {} }
+          ]
+        },
+        {
+          "id": "biobizz-allmix",
+          "name": "All·Mix (tabla oficial)",
+          "plant_type": "fotoperiodica",
+          "confidence": "alta",
+          "notes": "Para sustrato muy prefertilizado (All·Mix): menos Bio·Grow y Bio·Bloom arranca más bajo.",
+          "weeks": [
+            { "w": 1, "phase": "enraizamiento", "doses": { "bb-rootjuice": [4, 4], "bb-grow": [2, 2] } },
+            { "w": 2, "phase": "vege", "doses": { "bb-rootjuice": [4, 4], "bb-grow": [2, 2] } },
+            { "w": 3, "phase": "flora", "doses": { "bb-rootjuice": [2, 2], "bb-grow": [3, 3], "bb-bloom": [1, 1], "bb-topmax": [1, 1] } },
+            { "w": 4, "phase": "flora", "doses": { "bb-rootjuice": [2, 2], "bb-grow": [2, 2], "bb-bloom": [2, 2], "bb-topmax": [2, 2] } },
+            { "w": 5, "phase": "flora", "doses": { "bb-grow": [2, 2], "bb-bloom": [3, 3], "bb-topmax": [2, 2] } },
+            { "w": 6, "phase": "flora", "doses": { "bb-grow": [2, 2], "bb-bloom": [3, 3], "bb-topmax": [3, 3] } },
+            { "w": 7, "phase": "flora", "doses": { "bb-grow": [2, 2], "bb-bloom": [3, 3], "bb-topmax": [3, 3] } },
+            { "w": 8, "phase": "flora", "doses": { "bb-grow": [2, 2], "bb-bloom": [4, 4], "bb-topmax": [4, 4] } },
+            { "w": 9, "phase": "flora", "doses": { "bb-grow": [2, 2], "bb-bloom": [4, 4], "bb-topmax": [4, 4] } },
+            { "w": 10, "phase": "flora", "doses": { "bb-grow": [1, 1], "bb-bloom": [4, 4], "bb-topmax": [4, 4] } },
+            { "w": 11, "phase": "lavado", "doses": {} }
+          ]
+        }
+      ],
+      "sources": [
+        "https://www.biobizz.com/wp-content/uploads/2021/03/Nutrient-Schedule-ES_2021.pdf"
+      ]
+    },
+    {
+      "id": "eden-pack-x4",
+      "brand": "Eden",
+      "origin": "Argentina",
+      "pack_name": "Pack x4 Ciclo Completo (Roots + Vege + Flora + Sugar)",
+      "type": "organo-mineral",
+      "products": [
+        { "id": "ed-roots", "name": "Eden Roots", "role": "enraizante", "unit": "ml", "size": "125 ml", "in_pack": true, "label_use": "2-3 ml/L, 1 vez por semana. También post-trasplante." },
+        { "id": "ed-vege", "name": "Eden Vege", "role": "vege", "unit": "ml", "size": "125 ml", "in_pack": true, "label_use": "2-3 ml/L (algunas etiquetas dicen 2-5), 1 vez por semana." },
+        { "id": "ed-flora", "name": "Eden Flora", "role": "flora", "unit": "ml", "size": "125 ml", "in_pack": true, "label_use": "2-5 ml/L, 1 vez por semana. No necesita PK extra." },
+        { "id": "ed-sugar", "name": "Eden Sugar", "role": "melaza", "unit": "ml", "size": "125 ml", "in_pack": true, "label_use": "2-3 ml/L (algunas etiquetas 2-5), 1 vez por semana. Se puede usar hasta el último día." }
+      ],
+      "schedules": [
+        {
+          "id": "eden-x4-foto",
+          "name": "Pack x4 – fotoperiódica (propuesta)",
+          "plant_type": "fotoperiodica",
+          "confidence": "baja",
+          "notes": "Eden no publica una tabla semanal; solo dosis por producto. Calendario propuesto con el mismo esqueleto que las otras marcas.",
+          "weeks": [
+            { "w": 1, "phase": "enraizamiento", "doses": { "ed-roots": [2, 3] } },
+            { "w": 2, "phase": "enraizamiento", "doses": { "ed-roots": [2, 3] } },
+            { "w": 3, "phase": "vege", "doses": { "ed-vege": [2, 2] } },
+            { "w": 4, "phase": "vege", "doses": { "ed-vege": [2, 3] } },
+            { "w": 5, "phase": "vege", "doses": { "ed-vege": [3, 3] } },
+            { "w": 6, "phase": "flora", "doses": { "ed-flora": [2, 2], "ed-vege": [2, 2] } },
+            { "w": 7, "phase": "flora", "doses": { "ed-flora": [3, 3], "ed-sugar": [2, 3] } },
+            { "w": 8, "phase": "flora", "doses": { "ed-flora": [3, 4], "ed-sugar": [2, 3] } },
+            { "w": 9, "phase": "flora", "doses": { "ed-flora": [4, 5], "ed-sugar": [2, 3] } },
+            { "w": 10, "phase": "flora", "doses": { "ed-flora": [4, 5], "ed-sugar": [2, 3] } },
+            { "w": 11, "phase": "flora", "doses": { "ed-flora": [3, 4], "ed-sugar": [2, 3] } },
+            { "w": 12, "phase": "flora", "doses": { "ed-sugar": [2, 3] } },
+            { "w": 13, "phase": "lavado", "doses": {} }
+          ]
+        }
+      ],
+      "sources": [
+        "https://www.sanmarigrowshop.com.ar/contenido.asp?id=3159",
+        "https://www.hogarjardin.com.ar/product/fertilizante-de-crecimiento-vege-eden/",
+        "https://web.upgrowshop.com/producto/1018/eden-roots-estimulador-de-raices-500-cc"
+      ]
+    }
+  ]
+}
