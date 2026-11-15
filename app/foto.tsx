@@ -3,6 +3,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
+import { persistPhoto } from '@/photoFiles';
 import { activePlants, summarize } from '@/selectors';
 import { useStore } from '@/store';
 import { colors, typo } from '@/theme';
@@ -24,6 +25,7 @@ export default function FotoScreen() {
   const [description, setDescription] = useState('');
   const [tags, setTags] = useState<string[]>(['Nota']);
   const [asCover, setAsCover] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const plant = s.plants.find((p) => p.id === plantId);
   const sum = plant ? summarize(s, plant) : undefined;
@@ -42,10 +44,20 @@ export default function FotoScreen() {
     if (!res.canceled && res.assets[0]) setUri(res.assets[0].uri);
   };
 
-  const save = () => {
-    if (!plantId || !uri) return;
+  const save = async () => {
+    if (!plantId || !uri || saving) return;
+    setSaving(true);
+    let stored: string;
+    try {
+      // Lo que devuelve el selector puede estar en una carpeta temporal: se copia a la de la app.
+      stored = await persistPhoto(uri);
+    } catch {
+      setSaving(false);
+      Alert.alert('No pude guardar la foto', 'Probá elegirla de nuevo. Si sigue pasando, revisá el espacio libre del celu.');
+      return;
+    }
     s.addPhoto(
-      { plantId, uri, date: new Date().toISOString(), description: description.trim(), tags },
+      { plantId, uri: stored, date: new Date().toISOString(), description: description.trim(), tags },
       asCover,
     );
     router.back();
@@ -70,7 +82,7 @@ export default function FotoScreen() {
       footer={
         <PrimaryButton
           label={uri ? 'Guardar foto' : 'Elegí o sacá una foto'}
-          disabled={!uri || !plantId}
+          disabled={!uri || !plantId || saving}
           onPress={save}
           style={{ flex: 1 }}
         />

@@ -21,6 +21,7 @@ import type {
   Tent,
   Watering,
 } from './types';
+import { adoptExternalPhotos, deleteAllPhotoFiles, deletePhotoFile, resolvePhotoUri } from './photoFiles';
 import { lightLabel, uid } from './utils';
 
 const STORE_VERSION = 3;
@@ -29,7 +30,7 @@ const STORE_VERSION = 3;
 export const STORE_KEY: string = process.env.EXPO_PUBLIC_STORE_KEY || 'weedly-data';
 export const IS_TEST_STORE: boolean = STORE_KEY !== 'weedly-data';
 
-interface Data {
+export interface Data {
   tents: Tent[];
   cycles: Cycle[];
   pots: Pot[];
@@ -98,6 +99,12 @@ interface Actions {
   deleteRecipe: (id: string) => void;
   upsertTasting: (t: Tasting) => void;
   updateSettings: (patch: Partial<Settings>) => void;
+  /** Nombre y medidas de la carpa. Filas y columnas no se tocan: de ellas dependen las macetas. */
+  updateTent: (id: string, patch: Partial<Pick<Tent, 'name' | 'widthCm' | 'depthCm' | 'heightCm'>>) => void;
+  /** Reemplaza todos los datos por los de una copia ya validada con `parseBackup`. */
+  replaceAllData: (data: Data) => void;
+  /** Borra todos los datos y fotos. La app vuelve al onboarding. */
+  resetAllData: () => void;
 }
 
 export type Store = Data & Actions;
@@ -376,11 +383,14 @@ export const useStore = create<Store>()(
             : s.plants;
           return { photos, plants };
         }),
-      deletePhoto: (id) =>
+      deletePhoto: (id) => {
+        const photo = get().photos.find((p) => p.id === id);
+        if (photo) deletePhotoFile(photo.uri);
         set((s) => ({
           photos: s.photos.filter((p) => p.id !== id),
           plants: s.plants.map((pl) => (pl.coverPhotoId === id ? { ...pl, coverPhotoId: undefined } : pl)),
-        })),
+        }));
+      },
       setCover: (plantId, photoId) =>
         set((s) => ({
           plants: s.plants.map((pl) => (pl.id === plantId ? { ...pl, coverPhotoId: photoId } : pl)),
@@ -468,6 +478,15 @@ export const useStore = create<Store>()(
         set((s) => ({ tastings: [...s.tastings.filter((x) => x.plantId !== t.plantId), t] })),
 
       updateSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
+      updateTent: (id, patch) => set((s) => ({ tents: s.tents.map((t) => (t.id === id ? { ...t, ...patch } : t)) })),
+      replaceAllData: (data) => {
+        set({ ...initialData, ...data });
+        tidyPhotos();
+      },
+      resetAllData: () => {
+        deleteAllPhotoFiles();
+        set({ ...initialData });
+      },
     }),
     {
       name: STORE_KEY,
@@ -476,7 +495,11 @@ export const useStore = create<Store>()(
       storage: createJSONStorage(() => AsyncStorage),
       onRehydrateStorage: () => {
         setHydrationStatus('pending');
-        return (state, error) => setHydrationStatus(state && !error ? 'ok' : 'error');
+        return (state, error) => {
+          setHydrationStatus(state && !error ? 'ok' : 'error');
+          // Después de hidratar `useStore` ya existe y lo guardado está cargado.
+          if (state && !error) setTimeout(tidyPhotos, 0);
+        };
       },
     },
   ),
@@ -511,4 +534,76 @@ export function exportDataJson(): string {
     null,
     2,
   );
+}
+
+/**
+ * Pone en orden las fotos: recalcula las rutas de las que ya están en la carpeta de la app (en iOS
+ * cambia entre actualizaciones) y copia ahí las viejas que todavía apuntan a donde las dejó el selector.
+ * Nunca rompe el arranque: si algo falla, las fotos quedan como estaban.
+ */
+function tidyPhotos() {
+  try {
+    const { photos } = useStore.getState();
+    const resolved = photos.map((p) => {
+      const uri = resolvePhotoUri(p.uri);
+      return uri === p.uri ? p : { ...p, uri };
+    });
+    if (resolved.some((p, i) => p !== photos[i])) useStore.setState({ photos: resolved });
+    adoptExternalPhotos(resolved)
+      .then((moved) => {
+        if (!moved.size) return;
+        useStore.setState((s) => ({ photos: s.photos.map((p) => (moved.has(p.id) ? { ...p, uri: moved.get(p.id)! } : p)) }));
+      })
+      .catch(() => {});
+  } catch {
+    // Se reintenta en el próximo arranque.
+  }
+}
+
+const ARRAY_KEYS = [
+  'tents',
+  'cycles',
+  'pots',
+  'plants',
+  'phases',
+  'genetics',
+  'lights',
+  'fertilizers',
+  'recipes',
+  'waterings',
+  'climate',
+  'photos',
+  'tastings',
+] as const satisfies readonly (keyof Data)[];
+
+/**
+ * Valida una copia exportada y la lleva al formato actual. Tira un Error con un mensaje para mostrar
+ * si el archivo no es una copia de Weedly o es de una versión más nueva de la app.
+ */
+export function parseBackup(text: string): Data {
+  let json: unknown;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    throw new Error('El archivo no es una copia de Weedly.');
+  }
+  const backup = json as { app?: unknown; version?: unknown; data?: unknown };
+  if (!backup || backup.app !== 'weedly' || !backup.data || typeof backup.data !== 'object') {
+    throw new Error('El archivo no es una copia de Weedly.');
+  }
+  const version = typeof backup.version === 'number' ? backup.version : 1;
+  if (version > STORE_VERSION) {
+    throw new Error('La copia es de una versión más nueva de Weedly. Actualizá la app y probá de nuevo.');
+  }
+  const migrated = migrateState(backup.data, version) as Partial<Data>;
+  for (const key of ARRAY_KEYS) {
+    if (migrated[key] != null && !Array.isArray(migrated[key])) throw new Error('La copia está dañada.');
+  }
+  if (!Array.isArray(migrated.tents) || !migrated.tents.length) throw new Error('La copia no tiene ninguna carpa.');
+  return {
+    ...initialData,
+    ...migrated,
+    settings: { ...initialData.settings, ...(migrated.settings ?? {}) },
+    activeTentId: migrated.activeTentId || migrated.tents[0].id,
+  };
 }

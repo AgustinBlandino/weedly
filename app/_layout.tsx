@@ -74,6 +74,7 @@ export default function RootLayout() {
           <Stack.Screen name="fertilizante/[id]" options={{ presentation: 'modal' }} />
           <Stack.Screen name="catalogo" options={{ presentation: 'modal' }} />
           <Stack.Screen name="cromo/[id]" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="ajustes" options={{ presentation: 'modal' }} />
         </Stack.Protected>
         <Stack.Protected guard={!hasTent} redirectTo="/">
           <Stack.Screen name="onboarding" options={{ gestureEnabled: false, animation: 'none' }} />

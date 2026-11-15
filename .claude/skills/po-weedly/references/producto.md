@@ -18,7 +18,8 @@ Agus, un solo usuario. Cultivo: carpa de 80×80×160 cm, 6 macetas de 10 L en ti
 - Fotos con descripción y etiquetas (poda, LST, plaga...), con opción de portada.
 - Clima manual: temperatura, humedad y VPD calculado.
 - Diario agrupado por día.
-- Biblioteca: genéticas (flora en semanas con días calculados; THC/CBD; efectos y sabores con selección múltiple), fertilizantes y recetas.
+- Biblioteca: genéticas (flora en semanas con días calculados; THC/CBD; efectos y sabores con selección múltiple; tipo en pares Semilla Fem/Regular y Ciclo Foto/Auto), luminarias y fertilizantes (catálogo, sin recetas por ahora).
+- Iluminación por ciclo con luminaria 3D, cromos de planta compartibles y diario por ciclo.
 
 ## Decisiones ya tomadas
 - Nombre: **Weedly**.
@@ -36,10 +37,13 @@ Agus, un solo usuario. Cultivo: carpa de 80×80×160 cm, 6 macetas de 10 L en ti
 - **La planta ocupa maceta desde que germina.** No hay semillero aparte: germinar 8 para quedarse con las 6 mejores queda para más adelante.
 - **Las plantas descartadas no se borran**: conservan su historial en el diario y liberan la maceta.
 - **Cromos de planta para compartir** (noviembre 2026, en desarrollo): un cromo por planta, generable en cualquier momento desde la ficha, estética de carta coleccionable sobre fondo 9:16. Foto de portada (o render de la fase si no hay), genética, fase y días, cuenta regresiva a cosecha, THC/CBD, sabores/efectos; número `#n/total` del ciclo y marco con color por fase. Vista previa para cambiar foto y ocultar datos; se comparte por el menú del sistema (view-shot + expo-sharing). Fuera del MVP: Wrapped de cierre de ciclo, resumen de carpa, rarezas, botón directo a historias de Instagram. No nombrar Instagram en la app.
+- **Colores de genéticas** (noviembre 2026): cada genética tiene un color fijo (`geneticPalette`) que aparece como punto o barra en Cultivo, Biblioteca y su formulario. Efectos y sabores se tiñen **por familia, no por valor** (`tagTones`: efectos lavanda, sabores turquesa), así lo que agrega el usuario también tiene color y no choca con los colores de genética. El tipo de semilla usa íconos, no colores. Colores semánticos por sabor quedan como opcional.
+- **Ajustes sale de Biblioteca** (noviembre 2026): pantalla propia desde un engranaje en el encabezado, con tres bloques: Tu carpa (nombre, medidas, aviso de riego), Tus datos (exportar como archivo, importar copia, borrar todo) y Acerca de (versión, privacidad, aviso legal +18, contacto). No sumar interruptores de cosas que la app no soporta.
+- **Lanzamiento** (noviembre 2026): v1 sin cuentas ni nube; todo en el celu, con exportar e importar como backup. Se publica primero como **beta cerrada** (TestFlight y prueba cerrada de Google Play, 5 a 10 growers) antes de producción. Orden: fotos persistentes e importar copia → Ajustes → ícono, splash, `eas.json` y versión de Expo fija → política de privacidad, clasificación +18 y fichas → beta.
 
 ## Tensiones y huecos conocidos (verificalos en el código antes de usarlos)
 - **Multiusuario cambia todo el modelo de datos**: cuentas, datos por usuario, seguridad de acceso en Supabase, y qué pasa con los datos locales existentes.
-- **Fotos como URIs locales** del selector: no son permanentes y son el principal riesgo al sincronizar.
+- **Fotos como URIs locales** del selector: no son permanentes (en iOS pueden ser temporales) y son el principal riesgo al sincronizar. Bloqueante del lanzamiento: copiarlas a la carpeta de la app.
 - **Una sola carpa por usuario en la app.** El store admite varias, pero falta la interfaz para crear otra y cambiar entre ellas.
 - **Fases secado y curado existen en el tipo `Phase`**, pero no hay registro de cosecha (pesos, rendimiento) ni seguimiento de secado/curado.
 - **Clima solo manual**; el campo `source` reserva el valor `sensor` pero no hay integración.

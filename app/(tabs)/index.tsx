@@ -114,13 +114,16 @@ export default function CultivoScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 120 }}>
-        <View accessible accessibilityRole="header">
-          <Text style={{ ...typo.title, color: colors.text }}>{headline.title}</Text>
-          {headline.subtitle ? (
-            <Text style={{ ...typo.bodyStrong, color: colors.lime, fontVariant: ['tabular-nums'], marginTop: 2 }}>
-              {headline.subtitle}
-            </Text>
-          ) : null}
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+          <View accessible accessibilityRole="header" style={{ flex: 1 }}>
+            <Text style={{ ...typo.title, color: colors.text }}>{headline.title}</Text>
+            {headline.subtitle ? (
+              <Text style={{ ...typo.bodyStrong, color: colors.lime, fontVariant: ['tabular-nums'], marginTop: 2 }}>
+                {headline.subtitle}
+              </Text>
+            ) : null}
+          </View>
+          <IconButton icon="settings-outline" label="Ajustes" bg="transparent" color={colors.textSoft} onPress={() => router.push('/ajustes')} />
         </View>
 
         <Rise delay={60}>
