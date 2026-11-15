@@ -45,7 +45,7 @@ export default function FertilizanteScreen() {
       }
     >
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Title size={28}>{existing ? existing.name : 'Nuevo fertilizante'}</Title>
+        <Title>{existing ? existing.name : 'Nuevo fertilizante'}</Title>
         <IconButton icon="close" label="Cerrar" onPress={() => router.back()} />
       </View>
       <View style={{ gap: 14, marginTop: 18 }}>

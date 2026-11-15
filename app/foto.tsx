@@ -5,10 +5,10 @@ import React, { useState } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
 import { activePlants, summarize } from '@/selectors';
 import { useStore } from '@/store';
-import { colors, fonts, radius } from '@/theme';
+import { colors, typo } from '@/theme';
 import { TiltPhoto } from '@/TiltPhoto';
 import { PHASE_LABEL } from '@/types';
-import { Chip, Empty, Field, IconButton, Muted, PrimaryButton, Rise, Screen, Title, Toggle } from '@/ui';
+import { Chip, Empty, Field, IconButton, Label, Muted, PrimaryButton, Rise, Screen, Title, Toggle } from '@/ui';
 import { fmtDate, today } from '@/utils';
 
 const TAGS = ['Nota', 'Poda', 'LST', 'SCROG', 'Defoliación', 'Plaga', 'Cosecha'];
@@ -55,7 +55,7 @@ export default function FotoScreen() {
     return (
       <Screen>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Title size={28}>Nueva foto</Title>
+          <Title>Nueva foto</Title>
           <IconButton icon="close" label="Cerrar" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
         </View>
         <Rise delay={40} style={{ marginTop: 18 }}>
@@ -77,7 +77,7 @@ export default function FotoScreen() {
       }
     >
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Title size={28}>Nueva foto</Title>
+        <Title>Nueva foto</Title>
         <IconButton icon="close" label="Cerrar" onPress={() => router.back()} />
       </View>
 
@@ -100,7 +100,7 @@ export default function FotoScreen() {
 
       {!initial ? (
         <>
-          <Muted style={{ marginTop: 16, marginBottom: 8, fontSize: 13 }}>Planta</Muted>
+          <Label style={{ marginTop: 16, marginBottom: 8 }}>Planta</Label>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {list.map(({ plant: p }) => (
               <Chip key={p.id} label={p.name} active={plantId === p.id} onPress={() => setPlantId(p.id)} />
@@ -118,7 +118,7 @@ export default function FotoScreen() {
         style={{ marginTop: 16 }}
       />
 
-      <Muted style={{ marginTop: 16, marginBottom: 8, fontSize: 13 }}>Etiquetas</Muted>
+      <Label style={{ marginTop: 16, marginBottom: 8 }}>Etiquetas</Label>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
         {TAGS.map((t) => (
           <Chip
@@ -131,7 +131,7 @@ export default function FotoScreen() {
       </View>
 
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
-        <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: colors.text }}>
+        <Text style={{ ...typo.bodyStrong, color: colors.text }}>
           Usar como portada{plant ? ` de ${plant.name}` : ''}
         </Text>
         <Toggle value={asCover} onChange={setAsCover} label="Usar como portada" />
@@ -146,8 +146,7 @@ function Tag({ text, flora }: { text: string; flora?: boolean }) {
       style={{
         backgroundColor: flora ? colors.floraBg : colors.bg,
         color: flora ? colors.flora : colors.text,
-        fontFamily: fonts.bodySemi,
-        fontSize: 12,
+        ...typo.captionStrong,
         paddingHorizontal: 10,
         paddingVertical: 6,
         borderRadius: 12,
@@ -177,7 +176,7 @@ function SourceButton({ icon, label, onPress }: { icon: React.ComponentProps<typ
       })}
     >
       <Ionicons name={icon} size={18} color={colors.text} />
-      <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: colors.text }}>{label}</Text>
+      <Text style={{ ...typo.bodyStrong, color: colors.text }}>{label}</Text>
     </Pressable>
   );
 }

@@ -1,11 +1,13 @@
 import type { Store } from './store';
 import { colors, geneticPalette } from './theme';
 import { LIGHT_TYPE_LABEL, PHASE_LABEL } from './types';
-import type { Cycle, CycleLight, Light, LightType, Phase, PhaseChange, Photo, Plant, Pot, Watering } from './types';
+import type { Cycle, CycleLight, Genetic, Light, LightType, Phase, PhaseChange, Photo, Plant, Pot, Watering } from './types';
 import { daysBetween, fmt, fmtDate, lightLabel, today, toYmd, parseDate, vpd } from './utils';
 
 export interface PlantSummary {
   phase: Phase;
+  /** Fecha (YYYY-MM-DD) en que arrancó la fase actual; la germinación si nunca cambió. */
+  phaseStart: string;
   dayInPhase: number;
   dayOfLife: number;
   vegeDays: number;
@@ -56,6 +58,7 @@ export function summarize(s: Store, plant: Plant): PlantSummary {
 
   return {
     phase,
+    phaseStart: start,
     dayInPhase: Math.max(0, daysBetween(start, t)),
     dayOfLife: Math.max(0, daysBetween(plant.germinationDate, t)),
     vegeDays,
@@ -64,6 +67,19 @@ export function summarize(s: Store, plant: Plant): PlantSummary {
     floraRemaining,
     ended,
   };
+}
+
+/** Otras plantas activas del mismo ciclo que están en la misma fase, para cambiarlas de fase juntas. */
+export function phaseSiblings(s: Store, plant: Plant): { plant: Plant; phaseStart: string }[] {
+  const cycle = plantCycle(s, plant);
+  if (!cycle || !isPlantActive(s, plant)) return [];
+  const phase = summarize(s, plant).phase;
+  const potIds = new Set(s.pots.filter((p) => p.cycleId === cycle.id).map((p) => p.id));
+  return s.plants
+    .filter((pl) => pl.id !== plant.id && potIds.has(pl.potId) && isPlantActive(s, pl))
+    .map((pl) => ({ plant: pl, sum: summarize(s, pl) }))
+    .filter((x) => x.sum.phase === phase)
+    .map((x) => ({ plant: x.plant, phaseStart: x.sum.phaseStart }));
 }
 
 export function lastWatering(s: Store, plantId: string): Watering | undefined {
@@ -365,7 +381,7 @@ export function lightDensity(
   };
 }
 
-/** Resumen de iluminación para la Carpa: "LED Marca Modelo 240 W · 375 W/m²" o "2 luminarias · 480 W · 750 W/m²". */
+/** Resumen de iluminación para el Cultivo: "LED Marca Modelo 240 W · 375 W/m²" o "2 luminarias · 480 W · 750 W/m²". */
 export function cycleLightingHeadline(s: Store, cycle: Cycle): string {
   const lights = cycleLights(s, cycle);
   if (!lights.length) return 'Sin iluminación asignada';
@@ -408,4 +424,53 @@ export function firstSteps(s: Store): { steps: FirstStep[]; visible: boolean } {
 export function latestClimate(s: Store) {
   const c = s.climate.find((x) => x.tentId === s.activeTentId);
   return c ? { ...c, vpd: vpd(c.tempC, c.rh) } : undefined;
+}
+
+export interface PlantCardData {
+  name: string;
+  genetic?: Genetic;
+  phase: Phase;
+  dayInPhase: number;
+  dayOfLife: number;
+  /** Solo en flora, con días de floración cargados en la genética y la planta activa. */
+  floraRemaining?: number;
+  ended: boolean;
+  /** Posición de la planta en su ciclo (1-based), contando las descartadas. Sin ciclo, no hay número. */
+  number?: number;
+  total?: number;
+  cycleName?: string;
+  /** Fotos de la planta, de la más nueva a la más vieja. */
+  photos: Photo[];
+  cover?: Photo;
+}
+
+/** Todo lo que muestra el cromo de una planta. Si no hay fotos, la pantalla usa el render de la fase. */
+export function plantCard(s: Store, plant: Plant): PlantCardData {
+  const sum = summarize(s, plant);
+  const cycle = plantCycle(s, plant);
+  // Orden estable: fila, columna, y dentro de la misma maceta germinación e id.
+  const ordered = cycle
+    ? cyclePlants(s, cycle.id).sort(
+        (a, b) =>
+          a.pot.row - b.pot.row ||
+          a.pot.col - b.pot.col ||
+          a.plant.germinationDate.localeCompare(b.plant.germinationDate) ||
+          (a.plant.id < b.plant.id ? -1 : a.plant.id > b.plant.id ? 1 : 0),
+      )
+    : [];
+  const index = ordered.findIndex((x) => x.plant.id === plant.id);
+  return {
+    name: plant.name,
+    genetic: s.genetics.find((g) => g.id === plant.geneticId),
+    phase: sum.phase,
+    dayInPhase: sum.dayInPhase,
+    dayOfLife: sum.dayOfLife,
+    floraRemaining: sum.floraRemaining,
+    ended: sum.ended,
+    number: index >= 0 ? index + 1 : undefined,
+    total: index >= 0 ? ordered.length : undefined,
+    cycleName: cycle?.name,
+    photos: photosOf(s, plant.id),
+    cover: coverOf(s, plant),
+  };
 }

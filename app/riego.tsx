@@ -3,8 +3,8 @@ import React, { useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { activePlants, needsWater } from '@/selectors';
 import { useStore } from '@/store';
-import { colors, fonts, radius } from '@/theme';
-import { Card, Chip, Empty, Field, IconButton, Muted, PrimaryButton, Rise, Screen, Title, Toggle } from '@/ui';
+import { colors, radius, typo } from '@/theme';
+import { Card, Chip, Empty, Field, IconButton, Label, Muted, PrimaryButton, Rise, Screen, Title, Toggle } from '@/ui';
 import { fmt, fmtDateTime, parseNum } from '@/utils';
 
 export default function RiegoScreen() {
@@ -62,7 +62,7 @@ export default function RiegoScreen() {
     return (
       <Screen>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Title size={28}>Registrar riego</Title>
+          <Title>Registrar riego</Title>
           <IconButton icon="close" label="Cerrar" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
         </View>
         <Rise delay={40} style={{ marginTop: 18 }}>
@@ -89,14 +89,14 @@ export default function RiegoScreen() {
     >
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <View style={{ gap: 2 }}>
-          <Title size={28}>Registrar riego</Title>
+          <Title>Registrar riego</Title>
           <Muted>{fmtDateTime(now.toISOString())}</Muted>
         </View>
         <IconButton icon="close" label="Cerrar" onPress={() => router.back()} />
       </View>
 
       <Rise delay={40}>
-        <Muted style={{ marginTop: 18, marginBottom: 8, fontSize: 13 }}>Plantas</Muted>
+        <Label style={{ marginTop: 18, marginBottom: 8 }}>Plantas</Label>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {list.map(({ plant }) => (
             <Chip key={plant.id} label={plant.name} active={selected.includes(plant.id)} onPress={() => toggle(plant.id)} />
@@ -110,9 +110,9 @@ export default function RiegoScreen() {
 
       <Rise delay={100}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 18, marginBottom: 8 }}>
-          <Muted style={{ fontSize: 13 }}>Receta</Muted>
+          <Label>Receta</Label>
           <Pressable onPress={() => router.push('/receta/nueva')} hitSlop={8}>
-            <Text style={{ color: colors.lime, fontFamily: fonts.bodySemi, fontSize: 13 }}>+ Nueva receta</Text>
+            <Text style={{ color: colors.lime, ...typo.labelStrong }}>+ Nueva receta</Text>
           </Pressable>
         </View>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -125,10 +125,10 @@ export default function RiegoScreen() {
           <Card style={{ marginTop: 10, gap: 10, backgroundColor: colors.cardAlt, borderRadius: radius.md }}>
             {items.map((it) => (
               <View key={it.fertilizerId} style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontFamily: fonts.body, fontSize: 14, color: colors.text }}>
-                  {it.name} <Text style={{ color: colors.muted, fontSize: 12 }}>{fmt(it.mlPerL)} ml/L</Text>
+                <Text style={{ ...typo.body, color: colors.text }}>
+                  {it.name} <Text style={{ ...typo.caption, color: colors.muted }}>{fmt(it.mlPerL)} ml/L</Text>
                 </Text>
-                <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: colors.lime }}>{fmt(it.mlPerL * total)} ml</Text>
+                <Text style={{ ...typo.bodyStrong, color: colors.lime }}>{fmt(it.mlPerL * total)} ml</Text>
               </View>
             ))}
           </Card>
@@ -136,18 +136,18 @@ export default function RiegoScreen() {
       </Rise>
 
       <Rise delay={160}>
-        <Muted style={{ marginTop: 18, marginBottom: 8, fontSize: 13 }}>Litros por maceta</Muted>
+        <Label style={{ marginTop: 18, marginBottom: 8 }}>Litros por maceta</Label>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
             <IconButton icon="remove" label="Menos litros" onPress={() => setLiters((l) => Math.max(0.25, l - 0.25))} />
-            <Text style={{ fontFamily: fonts.displaySemi, fontSize: 30, color: colors.text, minWidth: 84, textAlign: 'center' }}>
+            <Text style={{ ...typo.hero, color: colors.text, minWidth: 84, textAlign: 'center' }}>
               {fmt(liters, 2)} L
             </Text>
             <IconButton icon="add" label="Más litros" onPress={() => setLiters((l) => Math.min(20, l + 0.25))} />
           </View>
           <View style={{ alignItems: 'flex-end' }}>
             <Muted>Preparar</Muted>
-            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 16, color: colors.text }}>{fmt(total, 2)} L</Text>
+            <Text style={{ ...typo.stat, color: colors.text }}>{fmt(total, 2)} L</Text>
           </View>
         </View>
       </Rise>
@@ -159,7 +159,7 @@ export default function RiegoScreen() {
         </View>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
           <View>
-            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: colors.text }}>Medir runoff</Text>
+            <Text style={{ ...typo.bodyStrong, color: colors.text }}>Medir runoff</Text>
             <Muted>Opcional en tierra</Muted>
           </View>
           <Toggle value={runoff} onChange={setRunoff} label="Medir runoff" />

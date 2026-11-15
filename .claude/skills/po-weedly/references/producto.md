@@ -12,7 +12,7 @@ Agus, un solo usuario. Cultivo: carpa de 80×80×160 cm, 6 macetas de 10 L en ti
 - Onboarding: armar la carpa, arrancar de cero o con plantas en curso. Tarjeta "Primeros pasos" (genética, plantar, primera lectura de clima, riego, foto).
 - Plantado en macetas vacías (con cualquier genética o sin asignar) y descarte de plantas.
 - Cierre de ciclo, ciclo nuevo e historial de ciclos anteriores.
-- Carpa en vista 3D isométrica o lista, con plantas renderizadas según su fase.
+- Cultivo en vista 3D isométrica o lista, con plantas renderizadas según su fase.
 - Ficha de planta: fase y días calculados, barra vege/flora, descripción, riegos, fotos, genética, cata.
 - Registro de riego a varias plantas: receta con ml según litros, pH, EC y runoff opcional, aviso cada N días.
 - Fotos con descripción y etiquetas (poda, LST, plaga...), con opción de portada.
@@ -35,6 +35,7 @@ Agus, un solo usuario. Cultivo: carpa de 80×80×160 cm, 6 macetas de 10 L en ti
 - **Presets de carpa sin 120 × 60** (noviembre 2026): se sacó del onboarding; esa medida se arma con "Personalizada".
 - **La planta ocupa maceta desde que germina.** No hay semillero aparte: germinar 8 para quedarse con las 6 mejores queda para más adelante.
 - **Las plantas descartadas no se borran**: conservan su historial en el diario y liberan la maceta.
+- **Cromos de planta para compartir** (noviembre 2026, en desarrollo): un cromo por planta, generable en cualquier momento desde la ficha, estética de carta coleccionable sobre fondo 9:16. Foto de portada (o render de la fase si no hay), genética, fase y días, cuenta regresiva a cosecha, THC/CBD, sabores/efectos; número `#n/total` del ciclo y marco con color por fase. Vista previa para cambiar foto y ocultar datos; se comparte por el menú del sistema (view-shot + expo-sharing). Fuera del MVP: Wrapped de cierre de ciclo, resumen de carpa, rarezas, botón directo a historias de Instagram. No nombrar Instagram en la app.
 
 ## Tensiones y huecos conocidos (verificalos en el código antes de usarlos)
 - **Multiusuario cambia todo el modelo de datos**: cuentas, datos por usuario, seguridad de acceso en Supabase, y qué pasa con los datos locales existentes.

@@ -18,7 +18,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, fonts, radius } from './theme';
+import { colors, radius, typo } from './theme';
 import { fmtDateYear, isValidYmd, parseDate, toYmd } from './utils';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -49,21 +49,43 @@ export function Screen({
   );
 }
 
-export function Title({ children, size = 30, style }: { children: React.ReactNode; size?: number; style?: StyleProp<TextStyle> }) {
+/** Título de pantalla. `display` es la variante grande, para las pestañas raíz y la bienvenida. */
+export function Title({
+  children,
+  display,
+  numberOfLines,
+  style,
+}: {
+  children: React.ReactNode;
+  display?: boolean;
+  numberOfLines?: number;
+  style?: StyleProp<TextStyle>;
+}) {
   return (
-    <Text style={[{ fontFamily: fonts.display, fontSize: size, color: colors.text, letterSpacing: -0.5 }, style]}>
+    <Text accessibilityRole="header" numberOfLines={numberOfLines} style={[{ ...(display ? typo.display : typo.title), color: colors.text }, style]}>
       {children}
     </Text>
   );
 }
 
+/** Título de sección. */
 export function H2({ children, style }: { children: React.ReactNode; style?: StyleProp<TextStyle> }) {
-  return <Text style={[{ fontFamily: fonts.displaySemi, fontSize: 19, color: colors.text }, style]}>{children}</Text>;
+  return <Text style={[{ ...typo.heading, color: colors.text }, style]}>{children}</Text>;
+}
+
+/** Subsección o encabezado de grupo. */
+export function H3({ children, style }: { children: React.ReactNode; style?: StyleProp<TextStyle> }) {
+  return <Text style={[{ ...typo.subheading, color: colors.text }, style]}>{children}</Text>;
+}
+
+/** Etiqueta de un campo o de un grupo de opciones. */
+export function Label({ children, style }: { children: React.ReactNode; style?: StyleProp<TextStyle> }) {
+  return <Text style={[{ ...typo.label, color: colors.muted }, style]}>{children}</Text>;
 }
 
 export function Body({ children, style, numberOfLines }: { children: React.ReactNode; style?: StyleProp<TextStyle>; numberOfLines?: number }) {
   return (
-    <Text numberOfLines={numberOfLines} style={[{ fontFamily: fonts.body, fontSize: 14, color: colors.text }, style]}>
+    <Text numberOfLines={numberOfLines} style={[{ ...typo.body, color: colors.text }, style]}>
       {children}
     </Text>
   );
@@ -81,7 +103,7 @@ export function Muted({
   accessibilityRole?: 'alert';
 }) {
   return (
-    <Text accessibilityRole={accessibilityRole} numberOfLines={numberOfLines} style={[{ fontFamily: fonts.body, fontSize: 12, color: colors.muted }, style]}>
+    <Text accessibilityRole={accessibilityRole} numberOfLines={numberOfLines} style={[{ ...typo.caption, color: colors.muted }, style]}>
       {children}
     </Text>
   );
@@ -107,14 +129,14 @@ export function Chip({
     : tone === 'flora'
       ? colors.floraBg
       : tone === 'vege'
-        ? '#22351F'
+        ? colors.vegeBg
         : tone === 'lime'
           ? colors.lime
           : colors.card;
   const fg = active || tone === 'lime' ? colors.bg : tone === 'flora' ? colors.flora : tone === 'vege' ? colors.vege : colors.textSoft;
   const content = (
     <View style={{ backgroundColor: bg, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 14 }}>
-      <Text style={{ color: fg, fontFamily: active ? fonts.bodySemi : fonts.body, fontSize: 13 }}>{label}</Text>
+      <Text style={{ ...(active ? typo.labelStrong : typo.label), color: fg }}>{label}</Text>
     </View>
   );
   if (!onPress) return content;
@@ -158,7 +180,7 @@ export function PrimaryButton({
       ]}
     >
       {icon ? <Ionicons name={icon} size={18} color={colors.bg} /> : null}
-      <Text style={{ fontFamily: fonts.bodySemi, fontSize: 16, color: disabled ? colors.muted : colors.bg }}>{label}</Text>
+      <Text style={{ ...typo.button, color: disabled ? colors.muted : colors.bg }}>{label}</Text>
     </Pressable>
   );
 }
@@ -201,7 +223,7 @@ export function IconButton({
 export function Field({ label, style, ...props }: TextInputProps & { label: string; style?: StyleProp<ViewStyle> }) {
   return (
     <View style={[{ gap: 6 }, style]}>
-      <Muted style={{ fontSize: 13 }}>{label}</Muted>
+      <Label>{label}</Label>
       <TextInput
         placeholderTextColor="#7F897C"
         {...props}
@@ -214,8 +236,9 @@ export function Field({ label, style, ...props }: TextInputProps & { label: stri
           color: colors.text,
           paddingHorizontal: 14,
           paddingVertical: props.multiline ? 12 : 0,
-          fontFamily: fonts.body,
-          fontSize: 15,
+          // Sin lineHeight: en iOS desalinea el texto del TextInput.
+          fontFamily: typo.body.fontFamily,
+          fontSize: typo.body.fontSize,
           textAlignVertical: props.multiline ? 'top' : 'center',
         }}
       />
@@ -279,7 +302,7 @@ export function DateField({
 
   return (
     <View style={[{ gap: 6 }, style]}>
-      <Muted style={{ fontSize: 13 }}>{label}</Muted>
+      <Label>{label}</Label>
       <Pressable
         onPress={open}
         accessibilityRole="button"
@@ -299,11 +322,11 @@ export function DateField({
           transform: [{ scale: pressed ? 0.98 : 1 }],
         })}
       >
-        <Text style={{ fontFamily: fonts.body, fontSize: 15, color: valid ? colors.text : colors.muted }}>{text}</Text>
+        <Text style={{ ...typo.body, color: valid ? colors.text : colors.muted }}>{text}</Text>
         <Ionicons name="calendar-outline" size={18} color={colors.lime} />
       </Pressable>
       {error ? (
-        <Text accessibilityRole="alert" style={{ fontFamily: fonts.body, fontSize: 12, color: colors.danger }}>
+        <Text accessibilityRole="alert" style={{ ...typo.caption, color: colors.danger }}>
           {error}
         </Text>
       ) : null}
@@ -398,12 +421,12 @@ export function Stepper({
 }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-      <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text }}>{label}</Text>
+      <Text style={{ ...typo.bodyStrong, color: colors.text }}>{label}</Text>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
         <IconButton icon="remove" label={`Una ${unit} menos`} onPress={() => onChange(Math.max(min, value - 1))} />
         <Text
           accessibilityLiveRegion="polite"
-          style={{ fontFamily: fonts.displaySemi, fontSize: 26, color: colors.text, minWidth: 36, textAlign: 'center' }}
+          style={{ ...typo.hero, color: colors.text, minWidth: 40, textAlign: 'center' }}
         >
           {value}
         </Text>
@@ -476,7 +499,7 @@ export function SectionHeader({ title, action, onAction }: { title: string; acti
       <H2>{title}</H2>
       {action && onAction ? (
         <Pressable onPress={onAction} hitSlop={10} accessibilityRole="button">
-          <Text style={{ color: colors.lime, fontFamily: fonts.bodySemi, fontSize: 13 }}>{action}</Text>
+          <Text style={{ color: colors.lime, ...typo.labelStrong }}>{action}</Text>
         </Pressable>
       ) : null}
     </View>
@@ -499,7 +522,7 @@ export function WaterDrop({ fraction, color, size = 18 }: { fraction: number; co
 export function Empty({ text }: { text: string }) {
   return (
     <View style={{ borderWidth: 1, borderStyle: 'dashed', borderColor: '#4A524A', borderRadius: radius.md, padding: 16 }}>
-      <Muted style={{ fontSize: 13, color: colors.textSoft }}>{text}</Muted>
+      <Label style={{ color: colors.textSoft }}>{text}</Label>
     </View>
   );
 }

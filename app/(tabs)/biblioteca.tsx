@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Alert, Pressable, Share, Text, View } from 'react-native';
 import { namastePack } from '@/seed';
 import { exportDataJson, IS_TEST_STORE, STORE_KEY, useStore } from '@/store';
-import { colors, fonts, radius } from '@/theme';
+import { colors, radius, typo } from '@/theme';
 import { Body, Card, Chip, Empty, Field, H2, Muted, PrimaryButton, Rise, Screen, Title } from '@/ui';
 import { LIGHT_TYPE_LABEL } from '@/types';
 import { fmt, fmtWeeks, lightLabel, parseNum } from '@/utils';
@@ -37,7 +37,7 @@ export default function BibliotecaScreen() {
   return (
     <Screen>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Title size={32}>Biblioteca</Title>
+        <Title display>Biblioteca</Title>
         {seg !== 'ajustes' ? (
           <Pressable
             onPress={() => router.push(addRoute[seg])}
@@ -192,7 +192,7 @@ function Row({
     >
       <Card style={{ padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
         <View style={{ flex: 1, gap: 3 }}>
-          <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text }}>{title}</Text>
+          <Text style={{ ...typo.bodyStrong, color: colors.text }}>{title}</Text>
           {subtitle ? <Muted>{subtitle}</Muted> : null}
           {extra ? <Muted style={{ color: colors.textSoft }}>{extra}</Muted> : null}
         </View>

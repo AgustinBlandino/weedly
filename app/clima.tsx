@@ -3,8 +3,8 @@ import React, { useState } from 'react';
 import { Text, View } from 'react-native';
 import { activeTent } from '@/selectors';
 import { useStore } from '@/store';
-import { colors, fonts } from '@/theme';
-import { Card, Empty, Field, IconButton, Muted, PrimaryButton, Rise, Screen, Title } from '@/ui';
+import { colors, typo } from '@/theme';
+import { Card, Empty, Field, IconButton, Label, Muted, PrimaryButton, Rise, Screen, Title } from '@/ui';
 import { fmt, fmtDateTime, parseNum, vpd } from '@/utils';
 
 export default function ClimaScreen() {
@@ -27,13 +27,13 @@ export default function ClimaScreen() {
   return (
     <Screen footer={<PrimaryButton label="Guardar lectura" disabled={!valid || !tent} onPress={save} style={{ flex: 1 }} />}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Title size={28}>Clima de la carpa</Title>
+        <Title>Clima de la carpa</Title>
         <IconButton icon="close" label="Cerrar" onPress={() => router.back()} />
       </View>
 
       {!tent ? (
         <View style={{ marginTop: 18 }}>
-          <Empty text="Necesitás una carpa activa para guardar el clima. Volvé a la pantalla Carpa y revisá que esté creada." />
+          <Empty text="Necesitás una carpa activa para guardar el clima. Volvé a la pantalla Cultivo y revisá que esté creada." />
         </View>
       ) : null}
 
@@ -45,8 +45,8 @@ export default function ClimaScreen() {
         <Card style={{ marginTop: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <View>
             <Muted>VPD del aire</Muted>
-            <Text style={{ fontFamily: fonts.display, fontSize: 34, color: v != null ? colors.lime : colors.muted }}>
-              {v != null ? fmt(v, 2) : '—'} <Text style={{ fontSize: 16 }}>kPa</Text>
+            <Text style={{ ...typo.hero, color: v != null ? colors.lime : colors.muted }}>
+              {v != null ? fmt(v, 2) : '—'} <Text style={typo.bodyStrong}>kPa</Text>
             </Text>
           </View>
           <Muted style={{ maxWidth: 150, textAlign: 'right' }}>Se calcula solo con la temperatura y la humedad.</Muted>
@@ -55,14 +55,14 @@ export default function ClimaScreen() {
 
       {history.length ? (
         <Rise delay={100}>
-          <Muted style={{ marginTop: 22, marginBottom: 8, fontSize: 13 }}>Últimas lecturas</Muted>
+          <Label style={{ marginTop: 22, marginBottom: 8 }}>Últimas lecturas</Label>
           {history.map((c) => (
             <View
               key={c.id}
               style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.card }}
             >
-              <Muted style={{ color: colors.textSoft, fontSize: 13 }}>{fmtDateTime(c.date)}</Muted>
-              <Text style={{ fontFamily: fonts.bodySemi, color: colors.text, fontSize: 13 }}>
+              <Label style={{ color: colors.textSoft }}>{fmtDateTime(c.date)}</Label>
+              <Text style={{ ...typo.labelStrong, fontVariant: ['tabular-nums'], color: colors.text }}>
                 {fmt(c.tempC)}° · {Math.round(c.rh)}% · {fmt(vpd(c.tempC, c.rh), 2)} kPa
               </Text>
             </View>

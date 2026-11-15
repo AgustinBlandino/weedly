@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { EmptyPotSprite, PlantSprite, SPRITE_ANCHOR_Y, SPRITE_HEIGHT, SPRITE_UNITS } from './PlantSprite';
-import { colors, fonts } from './theme';
+import { colors, typo } from './theme';
 import type { Phase } from './types';
 
 export interface TentItem {
@@ -379,8 +379,7 @@ export function Tent3D({
             left: 0,
             right: 0,
             textAlign: 'center',
-            fontFamily: fonts.bodyBold,
-            fontSize: 10,
+            ...typo.badge,
             letterSpacing: 2,
             color: colors.lime,
             opacity: 0.85,
@@ -579,7 +578,7 @@ export function Tent3D({
                     }}
                   />
                 ) : null}
-                <Text style={{ fontFamily: fonts.bodyBold, fontSize: 11, color: it.alert ? colors.bg : colors.text }}>
+                <Text style={{ ...typo.badge, color: it.alert ? colors.bg : colors.text }}>
                   {it.name}
                 </Text>
               </View>

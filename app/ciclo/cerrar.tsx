@@ -27,7 +27,7 @@ export default function CerrarCicloScreen() {
     return (
       <Screen>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Title size={28}>Cerrar ciclo</Title>
+          <Title>Cerrar ciclo</Title>
           <IconButton icon="close" label="Cerrar" onPress={close} />
         </View>
         <Rise delay={40} style={{ marginTop: 18 }}>
@@ -51,7 +51,7 @@ export default function CerrarCicloScreen() {
   return (
     <Screen footer={<PrimaryButton label="Cerrar ciclo" disabled={!dateOk} onPress={confirm} style={{ flex: 1 }} />}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Title size={28}>Cerrar {cycle.name}</Title>
+        <Title>Cerrar {cycle.name}</Title>
         <IconButton icon="close" label="Cerrar" onPress={close} />
       </View>
 

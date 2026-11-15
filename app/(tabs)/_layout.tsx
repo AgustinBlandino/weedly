@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { colors, fonts } from '@/theme';
+import { colors, typo } from '@/theme';
 
 export default function TabsLayout() {
   return (
@@ -11,13 +11,13 @@ export default function TabsLayout() {
         tabBarActiveTintColor: colors.lime,
         tabBarInactiveTintColor: colors.muted,
         tabBarStyle: { backgroundColor: '#171A17', borderTopColor: '#262B26', height: 84, paddingTop: 8 },
-        tabBarLabelStyle: { fontFamily: fonts.bodySemi, fontSize: 11 },
+        tabBarLabelStyle: { ...typo.badge },
         sceneStyle: { backgroundColor: colors.bg },
       }}
     >
       <Tabs.Screen
         name="index"
-        options={{ title: 'Carpa', tabBarIcon: ({ color }) => <Ionicons name="grid-outline" size={22} color={color} /> }}
+        options={{ title: 'Cultivo', tabBarIcon: ({ color }) => <Ionicons name="grid-outline" size={22} color={color} /> }}
       />
       <Tabs.Screen
         name="diario"

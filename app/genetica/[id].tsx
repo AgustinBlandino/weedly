@@ -4,7 +4,7 @@ import { Alert, KeyboardAvoidingView, View } from 'react-native';
 import { EFFECT_OPTIONS, FLAVOR_OPTIONS, mergeOptions, optionKey } from '@/presets';
 import { useStore } from '@/store';
 import { colors } from '@/theme';
-import { Chip, Field, H2, IconButton, Muted, PrimaryButton, Screen, Title } from '@/ui';
+import { Chip, Field, H2, H3, IconButton, Label, Muted, PrimaryButton, Screen, Title } from '@/ui';
 import { fmt, parseNum } from '@/utils';
 
 const TYPE_PATTERN = /^(Fem|Regular) · (Foto|Auto)$/;
@@ -100,14 +100,14 @@ export default function GeneticaScreen() {
         }
       >
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Title size={28}>{existing ? existing.name : 'Nueva genética'}</Title>
+          <Title>{existing ? existing.name : 'Nueva genética'}</Title>
           <IconButton icon="close" label="Cerrar" onPress={() => router.back()} />
         </View>
         <View style={{ gap: 14, marginTop: 18 }}>
           <Field label="Nombre" value={name} onChangeText={setName} />
           <Field label="Banco / breeder" value={breeder} onChangeText={setBreeder} />
           <View style={{ gap: 8 }}>
-            <Muted style={{ fontSize: 13 }}>Tipo de semilla</Muted>
+            <Label>Tipo de semilla</Label>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               <Chip label="Fem" active={typeMatch?.[1] === 'Fem'} onPress={() => pickType('Fem')} />
               <Chip label="Regular" active={typeMatch?.[1] === 'Regular'} onPress={() => pickType('Regular')} />
@@ -169,7 +169,7 @@ export default function GeneticaScreen() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <View style={{ gap: 10, marginTop: 8 }}>
-      <H2 style={{ fontSize: 17 }}>{title}</H2>
+      <H3>{title}</H3>
       {children}
     </View>
   );

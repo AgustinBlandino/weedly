@@ -5,10 +5,10 @@ import { Alert, KeyboardAvoidingView, Text, View } from 'react-native';
 import { SPECTRUM_PRESETS } from '@/presets';
 import { activeCycle, lightDensity } from '@/selectors';
 import { useStore } from '@/store';
-import { colors, fonts } from '@/theme';
+import { colors, typo } from '@/theme';
 import { LIGHT_TYPE_LABEL } from '@/types';
 import type { LightType } from '@/types';
-import { Body, Card, Chip, Field, H2, IconButton, Muted, PrimaryButton, Screen, Title, Toggle } from '@/ui';
+import { Body, Card, Chip, Field, H2, H3, IconButton, Label, Muted, PrimaryButton, Screen, Title, Toggle } from '@/ui';
 import { fmt, lightLabel, parseNum } from '@/utils';
 
 const LIGHT_TYPES = Object.keys(LIGHT_TYPE_LABEL) as LightType[];
@@ -93,7 +93,7 @@ export default function LuminariaScreen() {
         }
       >
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-          <Title size={28} style={{ flex: 1 }}>
+          <Title style={{ flex: 1 }}>
             {existing ? lightLabel(existing) || 'Luminaria' : 'Nueva luminaria'}
           </Title>
           <IconButton icon="close" label="Cerrar" onPress={() => router.back()} />
@@ -119,7 +119,7 @@ export default function LuminariaScreen() {
 
         <View style={{ gap: 14, marginTop: 18 }}>
           <View style={{ gap: 8 }}>
-            <Muted style={{ fontSize: 13 }}>Tipo</Muted>
+            <Label>Tipo</Label>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               {LIGHT_TYPES.map((t) => (
                 <Chip key={t} label={LIGHT_TYPE_LABEL[t]} active={type === t} onPress={() => setType(t)} />
@@ -190,7 +190,7 @@ export default function LuminariaScreen() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <View style={{ gap: 10, marginTop: 8 }}>
-      <H2 style={{ fontSize: 17 }}>{title}</H2>
+      <H3>{title}</H3>
       {children}
     </View>
   );
@@ -198,7 +198,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function ErrorText({ children }: { children: React.ReactNode }) {
   return (
-    <Text accessibilityRole="alert" style={{ fontFamily: fonts.body, fontSize: 12, color: colors.danger }}>
+    <Text accessibilityRole="alert" style={{ ...typo.caption, color: colors.danger }}>
       {children}
     </Text>
   );

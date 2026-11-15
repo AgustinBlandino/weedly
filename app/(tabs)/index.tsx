@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { PHASE_STYLE } from '@/PhaseBar';
 import type { FirstStep } from '@/selectors';
 import {
   activeCycle,
@@ -27,12 +28,12 @@ import {
 } from '@/selectors';
 import { useStore } from '@/store';
 import { Tent3D } from '@/Tent3D';
-import { colors, fonts, radius } from '@/theme';
+import { colors, radius, typo } from '@/theme';
 import { PHASE_LABEL } from '@/types';
 import { Body, Card, Empty, H2, IconButton, Muted, PrimaryButton, Rise, SectionHeader, WaterDrop } from '@/ui';
 import { daysBetween, fmt, parseDate, relDays, toYmd, today } from '@/utils';
 
-export default function CarpaScreen() {
+export default function CultivoScreen() {
   const s = useStore();
   const [view, setView] = useState<'3d' | 'lista'>('3d');
   const tent = activeTent(s);
@@ -114,9 +115,9 @@ export default function CarpaScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 120 }}>
         <View accessible accessibilityRole="header">
-          <Text style={{ fontFamily: fonts.display, fontSize: 28, lineHeight: 34, color: colors.text, letterSpacing: -0.5 }}>{headline.title}</Text>
+          <Text style={{ ...typo.title, color: colors.text }}>{headline.title}</Text>
           {headline.subtitle ? (
-            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: colors.lime, fontVariant: ['tabular-nums'], marginTop: 2 }}>
+            <Text style={{ ...typo.bodyStrong, color: colors.lime, fontVariant: ['tabular-nums'], marginTop: 2 }}>
               {headline.subtitle}
             </Text>
           ) : null}
@@ -149,7 +150,7 @@ export default function CarpaScreen() {
                   })}
                 >
                   <Ionicons name="book-outline" size={18} color={colors.lime} />
-                  <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: colors.lime }}>Ver ciclos anteriores</Text>
+                  <Text style={{ ...typo.bodyStrong, color: colors.lime }}>Ver ciclos anteriores</Text>
                 </Pressable>
               ) : null}
             </Card>
@@ -169,8 +170,7 @@ export default function CarpaScreen() {
                   <Text
                     numberOfLines={1}
                     style={{
-                      fontFamily: fonts.bodySemi,
-                      fontSize: 12,
+                      ...typo.captionStrong,
                       fontVariant: ['tabular-nums'],
                       color: climateFresh ? colors.text : colors.muted,
                     }}
@@ -190,8 +190,7 @@ export default function CarpaScreen() {
                   <Text
                     numberOfLines={1}
                     style={{
-                      fontFamily: fonts.bodySemi,
-                      fontSize: 12,
+                      ...typo.captionStrong,
                       fontVariant: ['tabular-nums'],
                       color: climateFresh ? colors.text : colors.muted,
                     }}
@@ -210,7 +209,7 @@ export default function CarpaScreen() {
                   <Ionicons name={hasLights ? 'bulb' : 'bulb-outline'} size={16} color={hasLights ? colors.lime : colors.muted} />
                   <Text
                     numberOfLines={1}
-                    style={{ flexShrink: 1, fontFamily: fonts.bodySemi, fontSize: 12, color: hasLights ? colors.text : colors.textSoft }}
+                    style={{ flexShrink: 1, ...typo.captionStrong, color: hasLights ? colors.text : colors.textSoft }}
                   >
                     {lightPill}
                   </Text>
@@ -299,16 +298,36 @@ export default function CarpaScreen() {
                               <Ionicons name="leaf" size={20} color={colors.leafLight} />
                             </View>
                           )}
-                          <Text style={{ alignSelf: 'flex-start', backgroundColor: colors.floraBg, color: colors.flora, fontFamily: fonts.bodySemi, fontSize: 11, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10, overflow: 'hidden' }}>
-                            {PHASE_LABEL[sum.phase]} {sum.dayInPhase}
-                          </Text>
+                          <View
+                            accessible
+                            accessibilityLabel={`${PHASE_LABEL[sum.phase]}, día ${sum.dayInPhase}`}
+                            style={{ flexShrink: 1, alignItems: 'flex-end', gap: 4, marginLeft: 8 }}
+                          >
+                            <Text
+                              numberOfLines={1}
+                              adjustsFontSizeToFit
+                              minimumFontScale={0.85}
+                              style={{
+                                ...typo.badge,
+                                color: PHASE_STYLE[sum.phase].fg,
+                                backgroundColor: PHASE_STYLE[sum.phase].bg,
+                                paddingHorizontal: 8,
+                                paddingVertical: 4,
+                                borderRadius: 10,
+                                overflow: 'hidden',
+                              }}
+                            >
+                              {PHASE_LABEL[sum.phase]}
+                            </Text>
+                            <Muted style={{ fontVariant: ['tabular-nums'] }}>día {sum.dayInPhase}</Muted>
+                          </View>
                         </View>
                         <View style={{ gap: 2 }}>
-                          <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text }}>{plant.name}</Text>
+                          <Text style={{ ...typo.bodyStrong, color: colors.text }}>{plant.name}</Text>
                           {genetic ? (
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                               <Dot color={geneticColor(s, genetic.id)} />
-                              <Muted numberOfLines={1} style={{ flex: 1, fontSize: 12 }}>
+                              <Muted numberOfLines={1} style={{ flex: 1 }}>
                                 {genetic.name}
                               </Muted>
                             </View>
@@ -338,7 +357,7 @@ export default function CarpaScreen() {
                       })}
                     >
                       <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.pot, borderWidth: 3, borderColor: colors.potRim }} />
-                      <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: colors.textSoft }}>Maceta vacía</Text>
+                      <Text style={{ ...typo.bodyStrong, color: colors.textSoft }}>Maceta vacía</Text>
                       <Muted>
                         {fmt(pot.liters)} L · {pot.substrate}
                       </Muted>
@@ -370,7 +389,7 @@ export default function CarpaScreen() {
                     ]}
                   >
                     <WaterDrop fraction={water?.fraction ?? 0} color={waterColor} />
-                    <Text numberOfLines={1} style={{ flex: 1, fontFamily: fonts.bodySemi, fontSize: 12, color: water ? colors.text : colors.textSoft }}>
+                    <Text numberOfLines={1} style={{ flex: 1, ...typo.captionStrong, color: water ? colors.text : colors.textSoft }}>
                       {water ? `Último riego: ${waterAgo}` : 'Todavía no cargaste riegos'}
                     </Text>
                     {water ? (
@@ -378,8 +397,7 @@ export default function CarpaScreen() {
                         numberOfLines={1}
                         style={{
                           flexShrink: 0,
-                          fontFamily: water.overdue ? fonts.bodySemi : fonts.body,
-                          fontSize: 12,
+                          ...(water.overdue ? typo.captionStrong : typo.caption),
                           fontVariant: ['tabular-nums'],
                           color: water.overdue ? colors.flora : colors.muted,
                         }}
@@ -409,8 +427,8 @@ export default function CarpaScreen() {
                         })}
                       >
                         <Dot color={g.color} />
-                        <Text style={{ fontFamily: fonts.bodySemi, fontSize: 12, color: colors.text }}>{g.name}</Text>
-                        <Text style={{ fontFamily: fonts.body, fontSize: 12, color: colors.muted }}>×{g.count}</Text>
+                        <Text style={{ ...typo.captionStrong, color: colors.text }}>{g.name}</Text>
+                        <Text style={{ ...typo.caption, color: colors.muted }}>×{g.count}</Text>
                       </Pressable>
                     ))}
                   </View>
@@ -475,7 +493,7 @@ export default function CarpaScreen() {
                   })}
                 >
                   <Image source={{ uri: p.uri }} style={{ width: 108, height: 132, borderRadius: 18 }} />
-                  <Text style={{ position: 'absolute', left: 8, bottom: 8, backgroundColor: colors.bg, color: colors.text, fontFamily: fonts.bodySemi, fontSize: 11, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, overflow: 'hidden' }}>
+                  <Text style={{ position: 'absolute', left: 8, bottom: 8, backgroundColor: colors.bg, color: colors.text, ...typo.badge, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, overflow: 'hidden' }}>
                     {plant?.name} · {relDays(p.date)}
                   </Text>
                 </Pressable>
@@ -513,8 +531,8 @@ export default function CarpaScreen() {
             })}
           >
             <Ionicons name="stop-circle-outline" size={20} color={colors.danger} />
-            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: colors.danger }}>Cerrar ciclo</Text>
-            <Text numberOfLines={1} style={{ fontFamily: fonts.body, fontSize: 13, color: colors.muted, flexShrink: 1 }}>
+            <Text style={{ ...typo.bodyStrong, color: colors.danger }}>Cerrar ciclo</Text>
+            <Text numberOfLines={1} style={{ ...typo.label, color: colors.muted, flexShrink: 1 }}>
               · {cycle.name}
             </Text>
           </Pressable>

@@ -1,14 +1,15 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { PhaseBar } from '@/PhaseBar';
-import { coverOf, isPlantActive, lastWatering, photosOf, plantCycle, summarize, wateringsOf } from '@/selectors';
+import { PhaseCard, PHASE_STYLE } from '@/PhaseBar';
+import { PhaseChangeSheet } from '@/PhaseChangeSheet';
+import { coverOf, isPlantActive, lastWatering, phaseSiblings, photosOf, plantCycle, summarize, wateringsOf } from '@/selectors';
 import { useStore } from '@/store';
-import { colors, fonts, radius } from '@/theme';
+import { colors, radius, typo } from '@/theme';
 import { TiltPhoto } from '@/TiltPhoto';
 import { Phase, PHASE_LABEL } from '@/types';
-import { Body, Card, Chip, Empty, Field, H2, IconButton, Muted, PrimaryButton, Rise, Title } from '@/ui';
+import { Body, Card, Chip, Empty, Field, H2, IconButton, Label, Muted, PrimaryButton, Rise, Title } from '@/ui';
 import { fmt, fmtDate, fmtDateTime, fmtDateYear, fmtWeeks, parseNum, relDays, today } from '@/utils';
 
 type Tab = 'resumen' | 'riegos' | 'fotos' | 'genetica' | 'cata';
@@ -31,13 +32,14 @@ export default function PlantaScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const s = useStore();
   const [tab, setTab] = useState<Tab>('resumen');
+  const [phaseSheet, setPhaseSheet] = useState(false);
   const plant = s.plants.find((p) => p.id === id);
 
   if (!plant) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, padding: 20 }}>
         <IconButton icon="arrow-back" label="Volver" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
-        <Title size={28} style={{ marginTop: 20 }}>No encontré esa planta</Title>
+        <Title style={{ marginTop: 20 }}>No encontré esa planta</Title>
         <Body style={{ marginTop: 8, color: colors.textSoft }}>Puede que ya no exista. Volvé a la carpa y elegí otra.</Body>
       </SafeAreaView>
     );
@@ -56,13 +58,11 @@ export default function PlantaScreen() {
     plant.endedAt ? `Descartada el ${fmtDateYear(plant.endedAt)}` : '',
   ].filter(Boolean);
 
-  const advancePhase = () => {
-    if (!next) return;
-    Alert.alert(`Pasar a ${PHASE_LABEL[next].toLowerCase()}`, `Se registra hoy (${fmtDate(today())}) como inicio.`, [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Confirmar', onPress: () => s.changePhase(plant.id, next, today()) },
-    ]);
-  };
+  // Cata recién tiene sentido con la planta cosechada (o si ya se cargó una).
+  const showCata =
+    !active || sum.phase === 'secado' || sum.phase === 'curado' || s.tastings.some((t) => t.plantId === plant.id);
+  const tabs = TABS.filter((t) => t.id !== 'cata' || showCata);
+  const currentTab: Tab = tabs.some((t) => t.id === tab) ? tab : 'resumen';
 
   const discard = () =>
     Alert.alert(
@@ -87,8 +87,13 @@ export default function PlantaScreen() {
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 120 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <IconButton icon="arrow-back" label="Volver" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} />
-          <Title size={24}>{plant.name}</Title>
-          <IconButton icon="create-outline" label="Editar planta" onPress={() => router.push(`/editar-planta/${plant.id}`)} />
+          <Title numberOfLines={1} style={{ flexShrink: 1, textAlign: 'center', marginHorizontal: 8 }}>
+            {plant.name}
+          </Title>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <IconButton icon="share-outline" label="Compartir cromo" onPress={() => router.push(`/cromo/${plant.id}`)} />
+            <IconButton icon="create-outline" label="Editar planta" onPress={() => router.push(`/editar-planta/${plant.id}`)} />
+          </View>
         </View>
 
         {notices.length ? (
@@ -97,11 +102,11 @@ export default function PlantaScreen() {
             style={{ marginTop: 14, backgroundColor: colors.floraBg, borderRadius: radius.sm, padding: 12, gap: 2 }}
           >
             {notices.map((notice) => (
-              <Text key={notice} style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: colors.flora }}>
+              <Text key={notice} style={{ ...typo.bodyStrong, color: colors.flora }}>
                 {notice}
               </Text>
             ))}
-            <Body style={{ fontSize: 13, color: colors.textSoft }}>Su historial queda guardado.</Body>
+            <Label style={{ color: colors.textSoft }}>Su historial queda guardado.</Label>
           </View>
         ) : null}
 
@@ -112,10 +117,9 @@ export default function PlantaScreen() {
                 position: 'absolute',
                 left: 14,
                 top: 14,
-                backgroundColor: sum.phase === 'flora' ? colors.floraBg : '#22351F',
-                color: sum.phase === 'flora' ? colors.flora : colors.vege,
-                fontFamily: fonts.bodySemi,
-                fontSize: 12,
+                backgroundColor: PHASE_STYLE[sum.phase].bg,
+                color: PHASE_STYLE[sum.phase].fg,
+                ...typo.captionStrong,
                 paddingHorizontal: 10,
                 paddingVertical: 6,
                 borderRadius: 12,
@@ -146,56 +150,52 @@ export default function PlantaScreen() {
         </Rise>
 
         <View style={{ marginTop: 16 }}>
-          <PhaseBar s={sum} />
+          <PhaseCard s={sum} next={next} onAdvance={next ? () => setPhaseSheet(true) : undefined} />
         </View>
 
-        {next ? (
-          <Pressable onPress={advancePhase} accessibilityRole="button" style={{ alignSelf: 'flex-start', marginTop: 12 }}>
-            <Text style={{ color: colors.lime, fontFamily: fonts.bodySemi, fontSize: 13 }}>
-              Pasar a {PHASE_LABEL[next].toLowerCase()} →
-            </Text>
-          </Pressable>
-        ) : null}
+        <View accessibilityRole="tablist" style={{ marginTop: 24 }}>
+          <Segmented tabs={tabs} value={currentTab} onChange={setTab} />
+        </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 16 }} contentContainerStyle={{ gap: 8 }}>
-          {TABS.map((t) => (
-            <Chip key={t.id} label={t.label} active={tab === t.id} onPress={() => setTab(t.id)} />
-          ))}
-        </ScrollView>
-
-        <Rise key={tab} style={{ marginTop: 16, gap: 10 }}>
-          {tab === 'resumen' ? (
+        <Rise key={currentTab} style={{ marginTop: 18, gap: 12 }}>
+          {currentTab === 'resumen' ? (
             <>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
+              <Card style={{ padding: 0, flexDirection: 'row', flexWrap: 'wrap' }}>
+                <Stat label="Día de vida" value={`${sum.dayOfLife}`} edge="right-bottom" />
+                <Stat label="Último riego" value={lw ? relDays(lw.date) : '—'} edge="bottom" />
+                <Stat label="Fotos" value={`${photosOf(s, plant.id).length}`} edge="right" />
+                <Stat label="Sustrato" value={pot?.substrate || '—'} />
+              </Card>
+
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
                 <H2>Descripción</H2>
-                <Pressable onPress={() => router.push(`/editar-planta/${plant.id}`)} hitSlop={10}>
-                  <Text style={{ color: colors.lime, fontFamily: fonts.bodySemi, fontSize: 13 }}>Editar</Text>
+                <Pressable
+                  onPress={() => router.push(`/editar-planta/${plant.id}`)}
+                  hitSlop={10}
+                  accessibilityRole="button"
+                  accessibilityLabel="Editar descripción"
+                >
+                  <Text style={{ color: colors.lime, ...typo.bodyStrong }}>Editar</Text>
                 </Pressable>
               </View>
               {plant.description ? (
-                <Card style={{ padding: 14 }}>
-                  <Body style={{ color: colors.textSoft, lineHeight: 20 }}>{plant.description}</Body>
+                <Card>
+                  <Body style={{ color: colors.textSoft, lineHeight: 21 }}>{plant.description}</Body>
                 </Card>
               ) : (
                 <Empty text="Agregá una descripción: estructura, olor, cómo viene respondiendo." />
               )}
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 6 }}>
-                <Mini label="Día de vida" value={`${sum.dayOfLife}`} />
-                <Mini label="Sustrato" value={pot?.substrate ?? '—'} />
-                <Mini label="Último riego" value={lw ? relDays(lw.date) : '—'} />
-                <Mini label="Fotos" value={`${photosOf(s, plant.id).length}`} />
-              </View>
             </>
           ) : null}
 
-          {tab === 'riegos' ? <RiegosTab plantId={plant.id} readOnly={!active} /> : null}
-          {tab === 'fotos' ? <FotosTab plantId={plant.id} readOnly={!active} /> : null}
+          {currentTab === 'riegos' ? <RiegosTab plantId={plant.id} readOnly={!active} /> : null}
+          {currentTab === 'fotos' ? <FotosTab plantId={plant.id} readOnly={!active} /> : null}
 
-          {tab === 'genetica' ? (
+          {currentTab === 'genetica' ? (
             genetic ? (
               <>
                 <Card style={{ gap: 4 }}>
-                  <Text style={{ fontFamily: fonts.bodySemi, fontSize: 16, color: colors.text }}>{genetic.name}</Text>
+                  <Text style={{ ...typo.bodyStrong, color: colors.text }}>{genetic.name}</Text>
                   <Muted>
                     {[genetic.breeder, genetic.type, genetic.floweringDays ? `${fmtWeeks(genetic.floweringDays)} de flora` : '', genetic.thc ? `THC ${genetic.thc}` : '']
                       .filter(Boolean)
@@ -208,7 +208,7 @@ export default function PlantaScreen() {
                 <ChipList items={genetic.flavors} empty="Sin sabores cargados" />
                 {genetic.notes ? <Body style={{ color: colors.textSoft }}>{genetic.notes}</Body> : null}
                 <Pressable onPress={() => router.push(`/genetica/${genetic.id}`)} hitSlop={8}>
-                  <Text style={{ color: colors.lime, fontFamily: fonts.bodySemi, fontSize: 13 }}>Editar genética</Text>
+                  <Text style={{ color: colors.lime, ...typo.labelStrong }}>Editar genética</Text>
                 </Pressable>
               </>
             ) : (
@@ -221,7 +221,7 @@ export default function PlantaScreen() {
             )
           ) : null}
 
-          {tab === 'cata' ? <CataTab plantId={plant.id} /> : null}
+          {currentTab === 'cata' ? <CataTab plantId={plant.id} /> : null}
         </Rise>
 
         {!active ? null : (
@@ -230,7 +230,7 @@ export default function PlantaScreen() {
             accessibilityRole="button"
             style={{ alignSelf: 'center', minHeight: 44, justifyContent: 'center', paddingHorizontal: 12, marginTop: 20 }}
           >
-            <Text style={{ color: colors.danger, fontFamily: fonts.bodySemi, fontSize: 14 }}>Descartar planta</Text>
+            <Text style={{ color: colors.danger, ...typo.bodyStrong }}>Descartar planta</Text>
           </Pressable>
         )}
       </ScrollView>
@@ -251,26 +251,87 @@ export default function PlantaScreen() {
           />
         </View>
       )}
+
+      {next ? (
+        <PhaseChangeSheet
+          visible={phaseSheet}
+          plant={plant}
+          sum={sum}
+          next={next}
+          siblings={phaseSiblings(s, plant)}
+          onClose={() => setPhaseSheet(false)}
+          onConfirm={(date, ids) => {
+            ids.forEach((pid) => s.changePhase(pid, next, date));
+            setPhaseSheet(false);
+          }}
+        />
+      ) : null}
     </SafeAreaView>
+  );
+}
+
+function Segmented({ tabs, value, onChange }: { tabs: { id: Tab; label: string }[]; value: Tab; onChange: (t: Tab) => void }) {
+  return (
+    <View style={{ flexDirection: 'row', backgroundColor: colors.card, borderRadius: radius.sm, padding: 4, gap: 4 }}>
+      {tabs.map((t) => {
+        const on = t.id === value;
+        return (
+          <Pressable
+            key={t.id}
+            onPress={() => onChange(t.id)}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: on }}
+            style={{
+              flex: 1,
+              minHeight: 40,
+              borderRadius: radius.sm - 4,
+              backgroundColor: on ? colors.lime : 'transparent',
+              alignItems: 'center',
+              justifyContent: 'center',
+              paddingHorizontal: 2,
+            }}
+          >
+            <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.85}
+              style={{ ...typo.labelStrong, color: on ? colors.bg : colors.textSoft }}
+            >
+              {t.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
   );
 }
 
 function Info({ label, value }: { label: string; value: string }) {
   return (
     <View style={{ flex: 1, gap: 2 }}>
-      <Text style={{ fontFamily: fonts.body, fontSize: 11, color: colors.sageText }}>{label}</Text>
-      <Text numberOfLines={1} style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: colors.text }}>
+      <Text style={{ ...typo.caption, color: colors.sageText }}>{label}</Text>
+      <Text numberOfLines={1} style={{ ...typo.bodyStrong, color: colors.text }}>
         {value}
       </Text>
     </View>
   );
 }
 
-function Mini({ label, value }: { label: string; value: string }) {
+/** Celda de la grilla 2×2 del Resumen; `edge` dibuja la línea divisoria hacia la celda vecina. */
+function Stat({ label, value, edge }: { label: string; value: string; edge?: 'right' | 'bottom' | 'right-bottom' }) {
+  const line = { borderColor: colors.border };
   return (
-    <View style={{ width: '48%', backgroundColor: colors.card, borderRadius: 16, padding: 12, gap: 2 }}>
+    <View
+      style={[
+        { width: '50%', paddingHorizontal: 16, paddingVertical: 14, gap: 4 },
+        edge?.includes('right') ? { ...line, borderRightWidth: StyleSheet.hairlineWidth } : null,
+        edge?.includes('bottom') ? { ...line, borderBottomWidth: StyleSheet.hairlineWidth } : null,
+      ]}
+    >
       <Muted>{label}</Muted>
-      <Text style={{ fontFamily: fonts.displaySemi, fontSize: 20, color: colors.text }}>{value}</Text>
+      <Text numberOfLines={1} style={{ ...typo.stat, color: colors.text }}>
+        {value}
+      </Text>
     </View>
   );
 }
@@ -305,7 +366,7 @@ function RiegosTab({ plantId, readOnly }: { plantId: string; readOnly: boolean }
         >
           <Card style={{ padding: 14, gap: 4 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={{ fontFamily: fonts.bodySemi, fontSize: 14, color: colors.text }}>{w.recipeName ?? 'Solo agua'}</Text>
+              <Text style={{ ...typo.bodyStrong, color: colors.text }}>{w.recipeName ?? 'Solo agua'}</Text>
               <Muted>{fmtDateTime(w.date)}</Muted>
             </View>
             <Muted>
@@ -318,7 +379,7 @@ function RiegosTab({ plantId, readOnly }: { plantId: string; readOnly: boolean }
                 {w.items.map((it) => `${it.name} ${fmt(it.mlPerL)} ml/L`).join(' · ')}
               </Muted>
             ) : null}
-            {w.notes ? <Body style={{ color: colors.textSoft, fontSize: 13 }}>{w.notes}</Body> : null}
+            {w.notes ? <Label style={{ color: colors.textSoft }}>{w.notes}</Label> : null}
           </Card>
         </Pressable>
       ))}

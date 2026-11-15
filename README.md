@@ -21,7 +21,7 @@ Si la primera vez Expo te pregunta si querés instalar TypeScript, decile que s�
 
 ## Qué tiene esta versión (v0.1)
 
-- **Carpa 3D**: vista isométrica de la carpa con plantas renderizadas según su fase y macetas vacías para plantar. Se mueve sola y la girás arrastrando. Alternás con vista Lista.
+- **Cultivo 3D**: vista isométrica de la carpa con plantas renderizadas según su fase y macetas vacías para plantar. Se mueve sola y la girás arrastrando. Alternás con vista Lista.
 - **Ficha de planta**: foto de portada con balanceo 3D, fase y días calculados solos, barra vege/flora, descripción, riegos, fotos con su descripción, genética (efectos y sabores) y cata.
 - **Registrar riego**: varias plantas a la vez, receta con cálculo de ml según litros, pH, EC y runoff opcional.
 - **Nueva foto**: cámara o galería, descripción, etiquetas (poda, LST, plaga…) y opción de usarla como portada.
@@ -44,7 +44,7 @@ El próximo paso es sincronizar con **Supabase** (base + fotos en Storage) para 
 
 ```
 app/                 pantallas (expo-router)
-  (tabs)/            Carpa, Diario, Biblioteca
+  (tabs)/            Cultivo, Diario, Biblioteca
   planta/[id].tsx    ficha de planta
   onboarding.tsx     armar la carpa la primera vez
   plantar/[potId]    plantar en una maceta vacía (modal)

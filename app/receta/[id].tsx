@@ -2,8 +2,8 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, Pressable, Text, TextInput, View } from 'react-native';
 import { useStore } from '@/store';
-import { colors, fonts } from '@/theme';
-import { Empty, Field, IconButton, Muted, PrimaryButton, Screen, Title } from '@/ui';
+import { colors, typo } from '@/theme';
+import { Empty, Field, IconButton, Label, Muted, PrimaryButton, Screen, Title } from '@/ui';
 import { parseNum } from '@/utils';
 
 export default function RecetaScreen() {
@@ -51,14 +51,14 @@ export default function RecetaScreen() {
       }
     >
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Title size={28}>{existing ? existing.name : 'Nueva receta'}</Title>
+        <Title>{existing ? existing.name : 'Nueva receta'}</Title>
         <IconButton icon="close" label="Cerrar" onPress={() => router.back()} />
       </View>
       <Field label="Nombre" value={name} onChangeText={setName} placeholder="Flora · semanas 7–9" style={{ marginTop: 18 }} />
       {s.fertilizers.length ? (
-        <Muted style={{ marginTop: 18, marginBottom: 4, fontSize: 13 }}>
+        <Label style={{ marginTop: 18, marginBottom: 4 }}>
           Dosis en ml por litro (dejá vacío lo que no uses). Usá la dosis de la etiqueta.
-        </Muted>
+        </Label>
       ) : (
         <View style={{ marginTop: 18, gap: 12 }}>
           <Empty text="Para armar una receta necesitás fertilizantes. Sumá el pack Namasté o cargá los tuyos." />
@@ -69,7 +69,7 @@ export default function RecetaScreen() {
             hitSlop={12}
             style={{ alignSelf: 'center' }}
           >
-            <Text style={{ color: colors.lime, fontFamily: fonts.bodySemi, fontSize: 13 }}>Cargar uno propio</Text>
+            <Text style={{ color: colors.lime, ...typo.labelStrong }}>Cargar uno propio</Text>
           </Pressable>
         </View>
       )}
@@ -79,7 +79,7 @@ export default function RecetaScreen() {
           style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.card }}
         >
           <View style={{ flex: 1 }}>
-            <Text style={{ fontFamily: fonts.bodySemi, fontSize: 15, color: colors.text }}>{f.name}</Text>
+            <Text style={{ ...typo.bodyStrong, color: colors.text }}>{f.name}</Text>
             <Muted>{[f.brand, f.kind].filter(Boolean).join(' · ')}</Muted>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -99,8 +99,8 @@ export default function RecetaScreen() {
                 backgroundColor: colors.cardAlt,
                 color: colors.text,
                 textAlign: 'center',
-                fontFamily: fonts.bodySemi,
-                fontSize: 15,
+                fontFamily: typo.bodyStrong.fontFamily,
+                fontSize: typo.bodyStrong.fontSize,
               }}
             />
             <Muted>ml/L</Muted>
