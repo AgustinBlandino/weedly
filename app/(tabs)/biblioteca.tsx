@@ -2,10 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, Pressable, Share, Text, View } from 'react-native';
+import { SEED_TYPE_ICON, seedTypeParts } from '@/presets';
 import { fertilizerInfo, geneticColor } from '@/selectors';
 import { exportDataJson, IS_TEST_STORE, STORE_KEY, useStore } from '@/store';
 import { colors, radius, tagTones, typo } from '@/theme';
-import { Body, Card, Chip, Empty, Field, H2, Muted, PrimaryButton, Rise, Screen, Title } from '@/ui';
+import { Body, Card, Chip, Empty, Field, H2, Muted, PrimaryButton, Rise, Screen, Tag, Title } from '@/ui';
 import { LIGHT_TYPE_LABEL, type Genetic } from '@/types';
 import { fmt, fmtWeeks, lightLabel, parseNum } from '@/utils';
 
@@ -134,13 +135,9 @@ const MAX_TAGS = 3;
 
 /** Pills del tipo de semilla con ícono. Un tipo escrito a mano que no se reconoce se muestra tal cual. */
 function typePills(type: string): { icon?: IconName; label: string }[] {
-  const pills: { icon?: IconName; label: string }[] = [];
-  if (/auto/i.test(type)) pills.push({ icon: 'flash-outline', label: 'Auto' });
-  else if (/foto/i.test(type)) pills.push({ icon: 'sunny-outline', label: 'Foto' });
-  if (/fem/i.test(type)) pills.push({ icon: 'female', label: 'Fem' });
-  else if (/regular/i.test(type)) pills.push({ icon: 'male-female', label: 'Regular' });
-  if (!pills.length && type.trim()) pills.push({ label: type.trim() });
-  return pills;
+  const parts = seedTypeParts(type);
+  if (!parts.length) return type.trim() ? [{ label: type.trim() }] : [];
+  return parts.map((p) => ({ icon: SEED_TYPE_ICON[p], label: p }));
 }
 
 /** Alterna efectos y sabores para que la tarjeta muestre de los dos aunque haya muchos de uno. */
@@ -179,22 +176,14 @@ function GeneticRow({ genetic: g, color }: { genetic: Genetic; color: string }) 
           {pills.length ? (
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
               {pills.map((p) => (
-                <View
-                  key={p.label}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.cardAlt, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 4 }}
-                >
-                  {p.icon ? <Ionicons name={p.icon} size={12} color={colors.textSoft} /> : null}
-                  <Text style={{ ...typo.badge, color: colors.textSoft }}>{p.label}</Text>
-                </View>
+                <Tag key={p.label} label={p.label} icon={p.icon} />
               ))}
             </View>
           ) : null}
           {tags.length ? (
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
               {tags.slice(0, MAX_TAGS).map((t) => (
-                <View key={`${t.tone}-${t.label}`} style={{ backgroundColor: tagTones[t.tone].bg, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 4 }}>
-                  <Text style={{ ...typo.badge, color: tagTones[t.tone].fg }}>{t.label}</Text>
-                </View>
+                <Tag key={`${t.tone}-${t.label}`} label={t.label} tagTone={t.tone} />
               ))}
               {hidden > 0 ? (
                 <View style={{ borderRadius: 10, paddingHorizontal: 6, paddingVertical: 4 }}>

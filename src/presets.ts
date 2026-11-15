@@ -38,6 +38,26 @@ export const FLAVOR_OPTIONS = [
 /** Clave para comparar opciones sin importar mayúsculas ni espacios de más. */
 export const optionKey = (value: string) => value.trim().replace(/\s+/g, ' ').toLocaleLowerCase('es');
 
+/** Ícono de cada parte del tipo de semilla, igual en la Biblioteca y en el formulario de genética. */
+export const SEED_TYPE_ICON = {
+  Fem: 'female',
+  Regular: 'male-female',
+  Foto: 'sunny-outline',
+  Auto: 'flash-outline',
+} as const;
+
+export type SeedTypePart = keyof typeof SEED_TYPE_ICON;
+
+/** Partes reconocidas de un tipo ("Fem · Foto"), ciclo primero. Un texto que no se reconoce devuelve []. */
+export function seedTypeParts(type: string): SeedTypePart[] {
+  const parts: SeedTypePart[] = [];
+  if (/auto/i.test(type)) parts.push('Auto');
+  else if (/foto/i.test(type)) parts.push('Foto');
+  if (/fem/i.test(type)) parts.push('Fem');
+  else if (/regular/i.test(type)) parts.push('Regular');
+  return parts;
+}
+
 /** Une listas de opciones sin repetir, con las de `base` primero y en su orden. */
 export function mergeOptions(base: string[], ...extra: string[][]): string[] {
   const seen = new Set<string>();

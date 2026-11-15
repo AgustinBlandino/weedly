@@ -18,7 +18,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, radius, typo } from './theme';
+import { colors, radius, tagTones, typo } from './theme';
 import { fmtDateYear, isValidYmd, parseDate, toYmd } from './utils';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -113,19 +113,27 @@ export function Card({ children, style }: { children: React.ReactNode; style?: S
   return <View style={[{ backgroundColor: colors.card, borderRadius: radius.lg, padding: 16 }, style]}>{children}</View>;
 }
 
+type TagTone = keyof typeof tagTones;
+
 export function Chip({
   label,
   tone = 'neutral',
   onPress,
   active,
+  icon,
+  tagTone,
 }: {
   label: string;
   tone?: 'neutral' | 'flora' | 'vege' | 'lime';
   onPress?: () => void;
   active?: boolean;
+  icon?: IconName;
+  /** Familia de etiqueta (efecto, sabor): activo toma el tono de la familia en vez de lime, como en la Biblioteca. */
+  tagTone?: TagTone;
 }) {
+  const family = tagTone ? tagTones[tagTone] : undefined;
   const bg = active
-    ? colors.lime
+    ? (family?.bg ?? colors.lime)
     : tone === 'flora'
       ? colors.floraBg
       : tone === 'vege'
@@ -133,9 +141,30 @@ export function Chip({
         : tone === 'lime'
           ? colors.lime
           : colors.card;
-  const fg = active || tone === 'lime' ? colors.bg : tone === 'flora' ? colors.flora : tone === 'vege' ? colors.vege : colors.textSoft;
+  const fg = active
+    ? (family?.fg ?? colors.bg)
+    : tone === 'lime'
+      ? colors.bg
+      : tone === 'flora'
+        ? colors.flora
+        : tone === 'vege'
+          ? colors.vege
+          : colors.textSoft;
   const content = (
-    <View style={{ backgroundColor: bg, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 14 }}>
+    <View
+      style={{
+        backgroundColor: bg,
+        paddingHorizontal: 12,
+        paddingVertical: 7,
+        borderRadius: 14,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+        // Con familia el borde marca la selección (el fondo es suave); siempre está para que el chip no salte de tamaño.
+        ...(family ? { borderWidth: 1, borderColor: active ? family.fg : 'transparent' } : null),
+      }}
+    >
+      {icon ? <Ionicons name={icon} size={14} color={fg} /> : null}
       <Text style={{ ...(active ? typo.labelStrong : typo.label), color: fg }}>{label}</Text>
     </View>
   );
@@ -144,6 +173,18 @@ export function Chip({
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityState={{ selected: !!active }} hitSlop={6}>
       {content}
     </Pressable>
+  );
+}
+
+/** Etiqueta chica de solo lectura sobre una tarjeta: neutra con ícono, o con el tono de su familia. */
+export function Tag({ label, icon, tagTone }: { label: string; icon?: IconName; tagTone?: TagTone }) {
+  const bg = tagTone ? tagTones[tagTone].bg : colors.cardAlt;
+  const fg = tagTone ? tagTones[tagTone].fg : colors.textSoft;
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: bg, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 4 }}>
+      {icon ? <Ionicons name={icon} size={12} color={fg} /> : null}
+      <Text style={{ ...typo.badge, color: fg }}>{label}</Text>
+    </View>
   );
 }
 
